@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  codex-web:
+    image: wenfxl/wenfxl-codex-manager:latest
+    container_name: wenfxl_codex_manager
+    ports:
+      - "8000:8000"
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+      - DB_TYPE=mysql
+      - DB_HOST=你的云端MySQL地址
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASS=你的数据库密码
+      - DB_NAME=wenfxl_manager

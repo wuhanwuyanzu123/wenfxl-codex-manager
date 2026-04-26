@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+data/
+*.zip
+extracted_temp/
+.vscode/
+.idea/
+.DS_Store
+auth_core.pyd
+auth_core.*.so
+node_modules/

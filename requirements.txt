@@ -1,0 +1,17 @@
+fastapi 
+uvicorn[standard] 
+PyYAML 
+pydantic
+websockets
+requests
+httpx[socks]
+curl_cffi 
+PySocks 
+cloudflare
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+docker
+pymysql
+cryptography
+cachetools

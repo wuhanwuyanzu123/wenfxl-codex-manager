@@ -1,0 +1,369 @@
+# [邮箱 API 模式选择]
+# https://github.com/smanx/freemail
+# https://github.com/dreamhunter2333/cloudflare_temp_email
+# https://github.com/maillab/cloud-mail
+# https://github.com/s12ryt/mail-curl
+
+reg_mode: "protocol"
+# 可选值: "imap" / "freemail" / "cloudflare_temp_email" / "cloudmail" / "mail_curl" / "luckmail"
+email_api_mode: "cloudflare_temp_email"
+
+# [基础配置: cloudflare_temp_email / imap / cloudmail 共享]
+# 你的域名 (支持逗号分隔多域名随机轮换) 如果只有一个域名就只填一个域名
+
+mail_domains: "domain1.com,domain2.xyz,domain3.net"
+
+#二级域名开关
+enable_sub_domains: false
+
+sub_domain_count: 1
+#域名层级
+sub_domain_level: 1
+#随机层级开关
+random_sub_domain_level: false
+
+ai_service:
+  enable_profile: false
+  api_base: "http://your-domain.com:8317/v1"
+  api_key: ""
+  model: "gpt-5"
+
+
+# 你的临时邮箱 后端API 基础地址 结尾不要/，IMAP和freemail/cloudmail/mail_curl不需要配置此项。注意：用浏览器打开后端api验证是否可访问
+gptmail_base: "https://your-domain.com" #是后端访问链接，不是前端访问链接，正常情况浏览器打开访问会显示ok就是对的
+
+# [模式 "cloudflare_temp_email" 专属配置]
+# 你的临时邮箱管理员密码
+admin_auth: ""
+# [项目专属内存池邮箱配置]
+openai_cpa:
+  webhook_secret: "wenfxl_secret_key"
+
+# [模式 "imap" 专属配置] (CF Catch-all 转发接收端)
+imap:
+  # 默认为gmail IMAP 服务器地址,QQ为imap.qq.com。不建议用QQ
+  server: "imap.gmail.com"
+  # IMAP 端口
+  port: 993
+  # 接收转发的真实邮箱账号
+  user: ""
+  # 16位应用专用密码，谷歌邮箱要去https://myaccount.google.com/apppasswords这里创建专属应用密码
+  pass: ""
+
+# [模式 "本地微软邮箱" 专属]
+local_microsoft:
+  # 是否开启无限裂变模式 (true/false)
+  enable_fission: false
+  # 裂变主邮箱（用来接收验证码）
+  master_email: ""
+  client_id: ""
+  refresh_token: ""
+  suffix_mode: "fixed"
+  suffix_len_min: 8
+  suffix_len_max: 8
+  pool_fission: false
+
+# [模式 "freemail" 专属]
+freemail:
+  #访问链接
+  api_url: "https://your-domain.com"
+  #JWTTOKEN
+  api_token: ""
+  enable_local_webhook: false
+  webhook_secret: ""
+
+# [模式 "cloud-mail" 专属配置]
+cloudmail:
+  #访问链接
+  api_url: "https://your-domain.com"
+  #管理员邮箱
+  admin_email: "admin@your-domain.com"
+  admin_password: "你的管理员密码"
+  enable_local_webhook: false
+  webhook_secret: ""
+
+# [模式 "mail_curl" 专属配置]
+mail_curl:
+  #访问链接
+  api_base: "https://your-domain.com"
+  key: "" # 你的密钥
+
+# [DuckMail 鸭子邮箱配置]
+duckmail:
+  # 你的鸭子邮箱 API 地址，默认为官方公共接口
+  api_url: "https://api.duckmail.com"
+  # 专属域名 (如 duck.com)，留空则随机使用官方支持的域名
+  domain: ""
+  mode: duck_official
+  duck_api_token:
+  forward_mode: Gmail_OAuth
+  forward_email: ''
+# [luckmail 鸭子邮箱配置]
+luckmail:
+  api_key: ""
+  preferred_domain: ""
+  email_type: ms_graph
+  variant_mode: ''
+  reuse_purchased: true
+  tag_id:
+# [temporam 邮箱配置]
+temporam:
+  cookie: ''
+# [tmailor 鸭子邮箱配置]
+tmailor:
+  current_token:
+# [FviaInboxes 配置]
+fvia:
+  token: ''
+
+# Gmail OAuth 裂变配置
+gmail_oauth_mode:
+  master_email: ""           # Gmail 主号 (需已完成 credentials.json 授权)
+  fission_enable: false      # 是否开启 Gmail 裂变
+  fission_mode: "suffix"     # 裂变模式: suffix、dot
+  # 后缀生成配置 (当 fission_mode 为 suffix 时生效)
+  suffix_mode: "mystic"      # fixed (固定长度) / range (随机范围) / mystic (高拟真词库)
+  suffix_len_min: 8
+  suffix_len_max: 12
+
+# [代理配置]
+# openai注册时代理地址，例子：http://127.0.0.1:7897。如果是国外服务器此项可以不填
+default_proxy: ""
+
+# 是否开启注册多线程并发 (true/false)
+enable_multi_thread_reg: false    
+# 注册时的最大并发线程数 (建议根据你的代理质量调整，不要设置过高)
+reg_threads: 10
+
+
+
+# Clash 节点智能轮换（本地使用clash软件）
+clash_proxy_pool:
+  # 【开关】是否在每次注册前自动通过 Clash 切换节点
+  enable: false
+  # 【核心开关】true=服务器10容器独立推算模式；false=本地单机/单容器模式
+  pool_mode: false
+  # Clash 的外部控制 API 地址 (注意端口通常是 9090 或 9097)
+  api_url: "http://127.0.0.1:9097"
+  #true为测速优选，false为随机盲抽。提示：如果A节点一直是最低延迟那么可能每次都是A节点。
+  fastest_mode: false
+  # 目标集群实例数量
+  cluster_count: 5
+  # 订阅链接存储
+  sub_url: ""
+  # 你机场包含所有节点的策略组名称，带有 Emoji 也没关系
+  group_name: "节点选择"
+  # Clash 的外部控制鉴权秘钥 (Secret)
+  secret: "set-your-secret"
+  # 用于连接外网测活的本地代理端口 (通常与上方的 default_proxy 保持一致)
+  test_proxy_url: ""
+  # 节点过滤黑名单：严格剔除包含以下关键词的节点 (如港台地区、说明性节点)
+  blacklist:
+    - "自动"
+    - "故障"
+    - "剩余"
+    - "到期"
+    - "官网"
+    - "Traffic"
+    - "DIRECT"
+    - "REJECT"
+    - "港"
+    - "HK"
+    - "Hongkong"
+    - "台"
+    - "TW"
+    - "Taiwan"
+    - "中"
+    - "CN"
+    - "China"
+    - "回国"
+
+raw_proxy_pool:
+  # 独立于 Clash 的批量代理池；启用后优先使用这里的代理列表
+  # 支持 HTTP / HTTPS / SOCKS5 显式协议；未写协议时默认按 socks5h 解析
+  enable: false
+  proxy_list:
+    # 支持以下格式：
+    # - http://user:pass@host:8080
+    # - https://user:pass@host:8443
+    # - socks5://user:pass@host:1080
+    # - socks5h://user:pass@host:1080
+    # - host:port
+    # - host:port:user:pass
+    # - user:pass@host:port
+    - "http://user:pass@127.0.0.1:8080"
+    - "socks5://user:pass@127.0.0.1:1080"
+    - "127.0.0.1:1081:user:pass"
+
+warp_proxy_list:
+  - "http://127.0.0.1:41001"
+  - "http://127.0.0.1:41002"
+  - "http://127.0.0.1:41003"
+  - "http://127.0.0.1:41004"
+  - "http://127.0.0.1:41005"
+  - "http://127.0.0.1:41006"
+  - "http://127.0.0.1:41007"
+  - "http://127.0.0.1:41008"
+  - "http://127.0.0.1:41009"
+  - "http://127.0.0.1:41010"
+
+
+# [验证码重发次数配置，默认5次]
+max_otp_retries: 5
+
+# [邮箱代理专项配置]
+# 【开关】true 表示获取邮箱（谷歌）也用代理，false 表示直连（推荐先试 false）如果是国外服务器此项可以保持false
+use_proxy_for_email: false
+# 【开关】true 表示在控制台日志中隐藏邮箱域名，false 表示显示完整邮箱
+enable_email_masking: true
+
+
+#注册后等待多少秒在去拿tokens,默认是5-15秒之内
+login_delay_min: 20
+login_delay_max: 45
+
+#常规模式是否保存仅注册账号，用于后续手动登录或者其他作用
+retain_reg_only: false
+
+# CPA 模式专属配置
+cpa_mode:
+  # 【开关】true 开启巡检补货上传，false 则只进行常规无限注册
+  enable: false
+  auto_check: true
+  # 【开关】开启 CPA 补货时，是否同时将账号 Token 备份到本地，默认true为备份
+  save_to_local: true
+  # CPA的访问地址
+  api_url: "http://your-domain.com:8317"
+  # CPA登陆密码
+  api_token: "xxxx"
+  # 仓库存量低于此值时触发补货
+  min_accounts_threshold: 30
+  # 每次触发补货注册的数量
+  batch_reg_count: 1
+  # 周限额剔除阈值设置 (0-100)
+  # 设为 80 代表额度剩余低于 80% 就当作死号剔除，设为 0 代表完全耗尽才剔除。
+  min_remaining_weekly_percent: 80
+  # 额度耗尽时是否删除 (false 则为不删除，恢复后自动唤醒)
+  remove_on_limit_reached: false 
+  # 账号彻底死亡(如封号、Token刷新失败)时是否删除 (false 则为不删除，只禁用)
+  remove_dead_accounts: false
+  # 是否开启刷新token功能
+  enable_token_revive: false
+  # CPA 仓库巡检的间隔时间，默认每60分钟巡检一次
+  check_interval_minutes: 60
+  #并发线程数配置，默认 10 线程
+  threads: 10
+  #是否保存仅注册账号，用于后续手动登录或者其他作用
+  retain_reg_only: false
+
+# SUB2APIA配置 参数含义跟CPA相同
+sub2api_mode:
+  enable: false
+  auto_check: true
+  save_to_local: true
+  api_url: 
+  api_key: 
+  min_accounts_threshold: 20
+  batch_reg_count: 1
+  remove_on_limit_reached: true
+  remove_dead_accounts: true
+  enable_token_revive: false
+  check_interval_minutes: 60
+  threads: 10
+  account_concurrency: 10
+  account_load_factor: 10
+  account_priority: 1
+  account_rate_multiplier: 1.0
+  account_group_ids: ""
+  enable_ws_mode: true
+  test_model: "gpt-5.2"
+  default_proxy: ""
+  #是否保存仅注册账号，用于后续手动登录或者其他作用
+  retain_reg_only: false
+
+hero_sms:
+  enabled: false
+  api_key: 
+  base_url: https://hero-sms.com/stubs/handler_api.php
+  country: 50
+  service: dr
+  auto_pick_country: false
+  verify_on_register: false
+  reuse_phone: true
+  max_price: 0.08
+  min_price: 0.05
+  min_balance: 1
+  max_tries: 3
+  poll_timeout_sec: 120
+  reuse_max: 2
+
+smsbower:
+  enabled: false
+  api_key:
+  base_url: https://smsbower.page/stubs/handler_api.php
+  country: 0
+  service: dr
+  auto_pick_country: false
+  verify_on_register: false
+  reuse_phone: true
+  max_price: 0.08
+  min_balance: 1
+  max_tries: 3
+  poll_timeout_sec: 120
+  reuse_max: 2
+
+fivesim:
+  enabled: false
+  api_key: ""
+  service: "openai"
+  country: "any"
+  auto_pick_country: true
+  verify_on_register: false
+  reuse_phone: true
+  max_price: 50.0
+  min_price: 0.0
+  min_balance: 10.0
+  max_tries: 3
+  poll_timeout_sec: 180
+  reuse_max: 2
+
+# 常规量产模式专属配置
+normal_mode:
+  # 每次循环注册成功或失败后，最短等待时间 (秒)
+  sleep_min: 5
+  # 每次循环注册成功或失败后，最长等待时间 (秒)
+  sleep_max: 30
+  # 单次(每批)执行的注册总数
+  target_count: 2
+
+tg_bot:
+  enable: false
+  token: ''
+  chat_id: ''
+  mask_email: false
+  mask_password: false
+
+# 数据库适配，默认为本地sqlite
+database:
+  type: "sqlite"  # 可选值: "sqlite" 或 "mysql"
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    user: "root"
+    password: ""
+    db_name: "wenfxl_manager"
+
+# WEB端密码
+web_password: admin
+#CF账号
+cf_api_email: 
+#CF KEY
+cf_api_key:
+max_log_lines: "500"
+#集群总控
+cluster_node_name: "NODE-1"
+cluster_master_url: ""
+cluster_secret: "wenfxl666"
+
+# 是否放弃强行变道走无密码OTP
+disable_forced_takeover: true
