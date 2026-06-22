@@ -4,11 +4,15 @@ import json
 import time
 import asyncio
 import threading
+import atexit
+import secrets
+import hashlib
 import uvicorn
 import warnings
 import subprocess
 import socket
 import socks
+from typing import Optional
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="trio")
 
 from fastapi import FastAPI
@@ -19,9 +23,173 @@ from contextlib import asynccontextmanager
 from utils import core_engine, db_manager
 from utils.config import reload_all_configs
 from utils.log_stream_cache import RecentParsedLogCache
+from utils.email_providers import mail_service
+from utils.memory_predictor import build_memory_report
 
 from global_state import engine, log_history, append_log
 from routers import api_routes
+
+
+def _get_env_int(name: str, default: int) -> int:
+    raw_value = str(os.getenv(name, "")).strip()
+    if not raw_value:
+        return default
+    try:
+        return int(raw_value)
+    except ValueError:
+        return default
+
+
+def _is_default_cluster_secret(secret: str) -> bool:
+    return str(secret or "").strip() in {"", "wenfxl666"}
+
+
+def _calculate_file_sha256(file_path: str) -> str:
+    digest = hashlib.sha256()
+    with open(file_path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            if chunk:
+                digest.update(chunk)
+    return digest.hexdigest()
+
+
+WEB_HOST = os.getenv("WEB_HOST", "0.0.0.0").strip() or "0.0.0.0"
+WEB_PORT = _get_env_int("WEB_PORT", _get_env_int("PORT", 8000))
+WEB_PORT_SCAN_LIMIT = max(1, _get_env_int("WEB_PORT_SCAN_LIMIT", 20))
+PID_FILE = os.path.join("data", "web_console.pid")
+
+
+def _write_pid_file() -> None:
+    try:
+        os.makedirs(os.path.dirname(PID_FILE), exist_ok=True)
+        with open(PID_FILE, "w", encoding="utf-8") as handle:
+            handle.write(str(os.getpid()))
+    except Exception:
+        pass
+
+
+def _remove_pid_file() -> None:
+    try:
+        if os.path.exists(PID_FILE):
+            os.remove(PID_FILE)
+    except Exception:
+        pass
+
+
+def _get_listener_pid(host: str, port: int):
+    tester = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        tester.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        tester.bind((host, port))
+        return None
+    except OSError:
+        pass
+    finally:
+        try:
+            tester.close()
+        except Exception:
+            pass
+
+    if os.name != "nt":
+        return -1
+
+    try:
+        output = subprocess.check_output(
+            ["netstat", "-ano", "-p", "tcp"],
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        target = f":{port}"
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            if "LISTENING" not in line or target not in line:
+                continue
+            parts = line.split()
+            if len(parts) >= 5 and parts[1].endswith(target):
+                try:
+                    return int(parts[-1])
+                except ValueError:
+                    return -1
+    except Exception:
+        return -1
+    return -1
+
+
+def _conflict_hosts(host: str) -> list[str]:
+    normalized = (host or "").strip() or "0.0.0.0"
+    if normalized == "0.0.0.0":
+        return ["0.0.0.0", "127.0.0.1"]
+    return [normalized]
+
+
+def _get_process_command_line(pid_value: int) -> str:
+    if pid_value <= 0:
+        return ""
+    try:
+        return subprocess.check_output(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f"(Get-CimInstance Win32_Process -Filter \"ProcessId = {pid_value}\").CommandLine",
+            ],
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        ).strip()
+    except Exception:
+        return ""
+
+
+def _is_same_console_instance(cmdline: str) -> bool:
+    if not cmdline or "wfxl_openai_regst.py" not in cmdline:
+        return False
+    normalized = cmdline.replace("\\", "/").lower()
+    current_script = os.path.abspath(__file__).replace("\\", "/").lower()
+    return current_script in normalized
+
+
+def _ensure_web_port_available(host: str, port: int) -> bool:
+    listener_pid = _get_listener_pid(host, port)
+    if listener_pid is None:
+        return True
+
+    cmdline = _get_process_command_line(listener_pid)
+    if _is_same_console_instance(cmdline):
+        print(f"[{core_engine.ts()}] [系统] Web 控制台已经在运行中，无需重复启动。")
+        print(f"[{core_engine.ts()}] [系统] 现有实例 PID: {listener_pid}")
+        sys.__stdout__.write(f"[{core_engine.ts()}] [系统] 控制台地址：http://127.0.0.1:{port} \n")
+        sys.__stdout__.flush()
+        return False
+
+    print(f"[{core_engine.ts()}] [ERROR] 端口 {port} 已被其他进程占用，无法启动控制台。")
+    if listener_pid > 0:
+        print(f"[{core_engine.ts()}] [ERROR] 占用 PID: {listener_pid}")
+    if cmdline:
+        print(f"[{core_engine.ts()}] [ERROR] 占用进程命令行: {cmdline}")
+    return False
+
+
+def _find_existing_console_port(host: str, start_port: int, max_ports: int = WEB_PORT_SCAN_LIMIT) -> Optional[int]:
+    for current_port in range(start_port, start_port + max_ports):
+        checked_pids = set()
+        for current_host in _conflict_hosts(host):
+            listener_pid = _get_listener_pid(current_host, current_port)
+            if listener_pid is None or listener_pid <= 0 or listener_pid in checked_pids:
+                continue
+            checked_pids.add(listener_pid)
+            cmdline = _get_process_command_line(listener_pid)
+            if _is_same_console_instance(cmdline):
+                return current_port
+    return None
+
+
+def _find_first_available_port(host: str, start_port: int, max_ports: int = WEB_PORT_SCAN_LIMIT) -> Optional[int]:
+    for current_port in range(start_port, start_port + max_ports):
+        if all(_get_listener_pid(current_host, current_port) is None for current_host in _conflict_hosts(host)):
+            return current_port
+    return None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,7 +206,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Wenfxl Codex Manager", lifespan=lifespan)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 拼接出 static 文件夹的绝对路径
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+# 使用绝对路径挂载
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +240,7 @@ def _worker_push_thread():
         except: pass
         args = DummyArgs(proxy=getattr(core_engine.cfg, 'DEFAULT_PROXY', None))
         core_engine.run_stats.update({"success": 0, "failed": 0, "retries": 0, "pwd_blocked": 0, "phone_verify": 0, "start_time": time.time()})
+        mail_service.start_mail_domain_runtime_tracking()
         if getattr(core_engine.cfg, 'ENABLE_CPA_MODE', False): engine.start_cpa(args)
         elif getattr(core_engine.cfg, 'ENABLE_SUB2API_MODE', False): engine.start_sub2api(args)
         else: engine.start_normal(args)
@@ -95,6 +269,13 @@ def _worker_push_thread():
                     print(f"[{core_engine.ts()}] [集群] 主控模式激活。")
                     last_role = "master"
                 await asyncio.sleep(0.5)
+                continue
+
+            if getattr(core_engine.cfg, 'CLUSTER_SYNC_REQUIRE_CUSTOM_SECRET', True) and _is_default_cluster_secret(secret):
+                if last_role != "secret_invalid":
+                    print(f"[{core_engine.ts()}] [集群] ❌ 当前 cluster_secret 仍为默认值，请先修改集群秘钥后再连接主控。")
+                    last_role = "secret_invalid"
+                await asyncio.sleep(3)
                 continue
 
             if master_url.startswith("http"):
@@ -132,8 +313,19 @@ def _worker_push_thread():
                                 "elapsed": f"{elapsed}s", "avg_time": f"{round(elapsed / s['success'], 1) if s['success'] > 0 else 0}s",
                                 "progress_pct": f"{min(100, round(s['success'] / s['target'] * 100, 1)) if s['target'] > 0 else 0}%",
                                 "is_running": is_running,
-                                "mode": "CPA仓管" if getattr(core_engine.cfg, 'ENABLE_CPA_MODE', False) else ("Sub2Api" if getattr(core_engine.cfg, 'ENABLE_SUB2API_MODE', False) else "常规量产")
-                            }
+                                 "mode": "CPA仓管" if getattr(core_engine.cfg, 'ENABLE_CPA_MODE', False) else ("Sub2Api" if getattr(core_engine.cfg, 'ENABLE_SUB2API_MODE', False) else "常规量产")
+                             }
+                            try:
+                                memory_report = build_memory_report(getattr(core_engine.cfg, '_c', {}))
+                                stats_payload["memory"] = {
+                                    "rss_mb": memory_report.get("actual", {}).get("rss_mb"),
+                                    "predicted_mid_mb": memory_report.get("prediction", {}).get("predicted_mb", {}).get("mid"),
+                                    "predicted_high_mb": memory_report.get("prediction", {}).get("predicted_mb", {}).get("high"),
+                                    "safety_level": memory_report.get("safety", {}).get("level"),
+                                    "safety_label": memory_report.get("safety", {}).get("label"),
+                                }
+                            except Exception:
+                                pass
 
                             _, parsed_logs, changed = log_cache.refresh(log_history)
 
@@ -157,25 +349,54 @@ def _worker_push_thread():
                                 threading.Thread(target=_internal_start, daemon=True).start()
                             elif cmd == "stop" and is_running:
                                 engine.stop()
+                                mail_service.stop_mail_domain_runtime_tracking()
                             elif cmd == "export_accounts":
                                 print(f"[{core_engine.ts()}] [系统] 收到总控提取指令，准备发货！")
                                 def _upload_task():
+                                    file_path = ""
                                     try:
                                         import urllib.request
-                                        local_accounts = db_manager.get_all_accounts_with_token(10000)
+                                        import urllib.parse
+                                        shared_dir = str(getattr(core_engine.cfg, 'CLUSTER_SYNC_SHARED_DIR', 'data/cluster_sync') or 'data/cluster_sync').strip()
+                                        shared_root = shared_dir if os.path.isabs(shared_dir) else os.path.join(BASE_DIR, shared_dir)
+                                        node_dir = os.path.join(shared_root, node_name)
+                                        os.makedirs(node_dir, exist_ok=True)
+                                        secret_value = str(secret or "").strip()
+                                        if getattr(core_engine.cfg, 'CLUSTER_SYNC_REQUIRE_CUSTOM_SECRET', True) and _is_default_cluster_secret(secret_value):
+                                            raise RuntimeError("请先配置自定义 cluster_secret 后再发起同步")
+                                        local_accounts = db_manager.get_all_accounts_with_token(0, 0)
                                         if not local_accounts:
                                             print(f"[{core_engine.ts()}] [系统] ⚠️ 本地库存为空，无账号可提取。")
                                             return
-                                        req_data = {"node_name": node_name, "secret": secret, "accounts": local_accounts}
-                                        req_body = json.dumps(req_data).encode('utf-8')
+                                        max_records = max(1, int(getattr(core_engine.cfg, 'CLUSTER_SYNC_MAX_RECORDS', 100000) or 100000))
+                                        if len(local_accounts) > max_records:
+                                            raise RuntimeError(f"同步记录数量超限，当前 {len(local_accounts)}，上限 {max_records}")
+                                        task_id = f"{node_name}-{int(time.time())}-{secrets.token_hex(4)}"
+                                        print(f"[{core_engine.ts()}] [系统] 📦 准备直传数据，共 {len(local_accounts)} 个账号...")
+                                        req_data = {
+                                            'node_name': node_name,
+                                            'secret': secret_value,
+                                            'task_id': task_id,
+                                            'total_count': len(local_accounts),
+                                            'accounts_data': local_accounts
+                                        }
+                                        req_body = json.dumps(req_data, ensure_ascii=False).encode('utf-8')
                                         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                                        upload_timeout = getattr(core_engine.cfg, 'CLUSTER_UPLOAD_TIMEOUT_SEC', 30)
                                         upload_req = urllib.request.Request(
-                                            f"{master_url.rstrip('/')}/api/cluster/upload_accounts", data=req_body,
+                                            f"{master_url.rstrip('/')}/api/cluster/sync_tasks", data=req_body,
                                             headers={'Content-Type': 'application/json'})
-                                        with opener.open(upload_req, timeout=15) as _:
-                                            print(f"[{core_engine.ts()}] [系统] 📤 已成功将 {len(local_accounts)} 个账号打包发往总控！")
+                                        with opener.open(upload_req, timeout=upload_timeout) as resp:
+                                            resp_body = resp.read().decode('utf-8', errors='replace').strip()
+                                        try:
+                                            resp_json = json.loads(resp_body) if resp_body else {}
+                                        except Exception:
+                                            raise RuntimeError(f"主控返回了非 JSON 响应: {resp_body[:200]}")
+                                        if resp_json.get('status') != 'success':
+                                            raise RuntimeError(resp_json.get('message') or '主控未确认同步任务')
+                                        print(f"[{core_engine.ts()}] [系统] 📤 同步任务 {task_id} 已提交主控，等待异步导入。")
                                     except Exception as e:
-                                        print(f"[{core_engine.ts()}] [ERROR] ❌ 账号上传总控失败: {e}")
+                                        print(f"[{core_engine.ts()}] [ERROR] ❌ 账号同步任务提交失败: {e}")
                                 threading.Thread(target=_upload_task, daemon=True).start()
 
                             await asyncio.sleep(push_interval if is_running else 3.0)
@@ -188,6 +409,19 @@ threading.Thread(target=_worker_push_thread, daemon=True).start()
 if __name__ == "__main__":
     try: reload_all_configs()
     except: pass
+    atexit.register(_remove_pid_file)
+    existing_port = _find_existing_console_port(WEB_HOST, WEB_PORT)
+    if existing_port is not None:
+        print(f"[{core_engine.ts()}] [系统] Web 控制台已经在运行中，无需重复启动。")
+        sys.__stdout__.write(f"[{core_engine.ts()}] [系统] 控制台地址：http://127.0.0.1:{existing_port} \n")
+        sys.__stdout__.flush()
+        raise SystemExit(0)
+
+    selected_port = _find_first_available_port(WEB_HOST, WEB_PORT)
+    if selected_port is None:
+        print(f"[{core_engine.ts()}] [ERROR] 在 {WEB_PORT}-{WEB_PORT + WEB_PORT_SCAN_LIMIT - 1} 端口区间内未找到可用端口。")
+        raise SystemExit(1)
+
     print("=" * 65)
     print(f"[{core_engine.ts()}] [系统] OpenAI 全链路自动化生产与多维资源中转调度平台")
     print(f"[{core_engine.ts()}] [系统] Author: (wenfxl)轩灵")
@@ -197,8 +431,11 @@ if __name__ == "__main__":
     print(f"[{core_engine.ts()}] [系统] 根据官网披露消息：在某些国家，您可以使用 WhatsApp 完成手机验证，而无需通过短信：阿拉伯联合酋长国、埃及、印度尼西亚、以色列、印度、马来西亚、尼日利亚、巴基斯坦、沙特阿拉伯、土耳其、乌克兰、越南，目前WhatsApp需要大家测试后在说。")
     print("-" * 65)
     print(f"[{core_engine.ts()}] [系统] Web 控制台已准备就绪，等待下发指令...")
-    sys.__stdout__.write(f"[{core_engine.ts()}] [系统] 控制台地址：http://127.0.0.1:8000 \n")
+    if selected_port != WEB_PORT:
+        print(f"[{core_engine.ts()}] [系统] 默认端口 {WEB_PORT} 已被占用，已自动切换到端口 {selected_port}。")
+    _write_pid_file()
+    sys.__stdout__.write(f"[{core_engine.ts()}] [系统] 控制台地址：http://127.0.0.1:{selected_port} \n")
     sys.__stdout__.write(f"[{core_engine.ts()}] [系统] 控制台初始密码：admin \n")
     sys.__stdout__.write(f"[{core_engine.ts()}] [系统] 结束请猛猛重复按CTRL+C \n")
     sys.__stdout__.flush()
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning", access_log=False, timeout_graceful_shutdown=1)
+    uvicorn.run(app, host=WEB_HOST, port=selected_port, log_level="warning", access_log=False, timeout_graceful_shutdown=1)

@@ -169,7 +169,7 @@ def init_config():
             default_config = yaml.safe_load(f) or {}
 
         if deep_update_config(default_config, user_config):
-            print(f"[{ts()}] [系统] 🛠️ 检测到旧版配置缺失新参数，已自动补齐并生效！")
+            print(f"[{ts()}] [系统] 检测到旧版配置缺失新参数，已自动补齐并生效！")
             try:
                 with CONFIG_FILE_LOCK:
                     with open(config_path, "w", encoding="utf-8") as f:
@@ -178,7 +178,7 @@ def init_config():
                 print(f"[{ts()}] [WARNING] 自动补全配置文件写入失败: {e}")
 
     return user_config
-
+APP_VERSION = "v17.0.3"
 _c: dict = {}
 WEB_PASSWORD: str = "admin"
 RETAIN_REG_ONLY: bool = False
@@ -186,6 +186,18 @@ ENABLE_SUB_DOMAINS: bool = False
 SUB_DOMAIN_COUNT: int = 10
 EMAIL_API_MODE: str = ""
 MAIL_DOMAINS: str = ""
+DISABLED_MAIL_DOMAINS: list[str] = []
+ENABLE_MAIL_DOMAIN_RUNTIME_CONTROL: bool = False
+ENABLE_MAIL_DOMAIN_GROUPING: bool = False
+MAIL_DOMAIN_GROUP_COUNT: int = 2
+MAIL_DOMAIN_GROUP_MODE: str = "auto"
+MAIL_DOMAIN_GROUP_STRATEGY: str = "round_robin"
+MAIL_DOMAIN_GROUPS: list[str] = []
+MAIL_DOMAIN_PINPOINT_BURST_MODE: bool = False
+MAIL_DOMAIN_PREFER_LOW_FAILURE_MODE: bool = False
+MAIL_DOMAIN_FAILURE_TYPES: list[str] = ["discarded_email"]
+MAIL_DOMAIN_FAIL_THRESHOLD: int = 3
+MAIL_DOMAIN_FAIL_COOLDOWN_SEC: int = 600
 GPTMAIL_BASE: str = ""
 ADMIN_AUTH: str = ""
 IMAP_SERVER: str = ""
@@ -216,6 +228,7 @@ DEFAULT_PROXY: str = ""
 ENABLE_MULTI_THREAD_REG: bool = False
 REG_THREADS: int = 3
 MAX_OTP_RETRIES: int = 5
+OTP_POLL_MAX_ATTEMPTS: int = 20
 USE_PROXY_FOR_EMAIL: bool = False
 ENABLE_EMAIL_MASKING: bool = True
 LOGIN_DELAY_MIN: int = 20
@@ -232,7 +245,7 @@ REMOVE_DEAD_ACCOUNTS: bool = False
 CPA_THREADS: int = 10
 CPA_AUTO_CHECK: bool = True
 CPA_RETAIN_REG_ONLY: bool = False
-
+CPA_AUTO_RE_OAUTH: bool = False
 
 CHECK_INTERVAL_MINUTES: int = 60
 ENABLE_TOKEN_REVIVE: bool = False
@@ -241,7 +254,7 @@ RANDOM_SUB_DOMAIN_LEVEL: bool = False
 ENABLE_SUB2API_MODE: bool = False
 SUB2API_URL: str = ""
 SUB2API_KEY: str = ""
-SUB2API_TEST_MODEL: str = "gpt-5.2"
+SUB2API_TEST_MODEL: str = "gpt-5.4-mini"
 SUB2API_MIN_THRESHOLD: int = 70
 SUB2API_BATCH_COUNT: int = 2
 SUB2API_CHECK_INTERVAL: int = 60
@@ -260,6 +273,13 @@ SUB2API_ENABLE_WS_MODE: bool = True
 SUB2API_DEFAULT_PROXY: str = ""
 SUB2API_DEFAULT_PROXY_POOL: list = []
 SUB2API_RETAIN_REG_ONLY: bool = False
+SUB2API_AUTO_RE_OAUTH: bool = False
+
+ENABLE_IMAGE2API_MODE: bool = False
+IMAGE2API_URL: str = ""
+IMAGE2API_KEY: str = ""
+IMAGE2API_RETAIN_REG_ONLY: bool = False
+IMAGE2API_IMG_ONLY_MODE: bool = False
 
 LUCKMAIL_PREFERRED_DOMAIN: str = ""
 LUCKMAIL_EMAIL_TYPE: str = ""
@@ -287,6 +307,7 @@ HERO_SMS_MAX_PRICE: float = 2.0
 HERO_SMS_MIN_BALANCE: float = 2.0
 HERO_SMS_MAX_TRIES: int = 3
 HERO_SMS_POLL_TIMEOUT_SEC: int = 120
+HERO_SMS_USE_PROXY: bool = False
 
 # SmsBower
 SMSBOWER_ENABLED = False
@@ -302,6 +323,9 @@ SMSBOWER_MIN_BALANCE = 0.0
 SMSBOWER_MAX_TRIES = 3
 SMSBOWER_POLL_TIMEOUT_SEC = 180
 SMSBOWER_MIN_PRICE = 0.05
+SMSBOWER_OPERATOR = ""
+SMSBOWER_USE_PROXY: bool = False
+SMSBOWER_WEB_COOKIE = ""
 
 # 5SIM
 FIVESIM_ENABLED = False
@@ -316,10 +340,13 @@ FIVESIM_MIN_PRICE = 0.0
 FIVESIM_MIN_BALANCE = 10.0
 FIVESIM_MAX_TRIES = 3
 FIVESIM_POLL_TIMEOUT_SEC = 180
+FIVESIM_OPERATOR = ""
+FIVESIM_USE_PROXY: bool = False
 
 NORMAL_SLEEP_MIN: int = 5
 NORMAL_SLEEP_MAX: int = 30
 NORMAL_TARGET_COUNT: int = 0
+NORMAL_SAVE_IMG_TO_LOCAL: bool = False
 MAX_LOG_LINES: int = 500
 _clash_enable: bool = False
 _clash_pool_mode: bool = False
@@ -338,10 +365,19 @@ TG_BOT: dict = {"enable": False, "token": "", "chat_id": ""}
 CLUSTER_NODE_NAME: str = ""
 CLUSTER_MASTER_URL: str = ""
 CLUSTER_SECRET: str = "wenfxl666"
+CLUSTER_UPLOAD_TIMEOUT_SEC: int = 15
+CLUSTER_SYNC_SHARED_DIR: str = "data/cluster_sync"
+CLUSTER_SYNC_IMPORT_POLL_SEC: int = 2
+CLUSTER_SYNC_MAX_RETRIES: int = 3
+CLUSTER_SYNC_PROGRESS_FLUSH_EVERY: int = 100
+CLUSTER_SYNC_STALE_FILE_MAX_AGE_HOURS: int = 12
+CLUSTER_SYNC_MAX_FILE_SIZE_MB: int = 20
+CLUSTER_SYNC_MAX_RECORDS: int = 100000
+CLUSTER_SYNC_REQUIRE_CUSTOM_SECRET: bool = True
 TEMPORAM_COOKIE: str = ""
 FVIA_TOKEN: str = ""
 TMAILOR_CURRENT_TOKEN: str = ""
-REG_MODE: str = "protocol"
+REG_MODE: str = "email"
 DB_TYPE: str = "sqlite"
 MYSQL_CFG: dict = {}
 _sub2api_proxy_rotation_lock = threading.Lock()
@@ -355,7 +391,11 @@ GMAIL_OAUTH_SUFFIX_LEN_MIN: int = 8
 GMAIL_OAUTH_SUFFIX_LEN_MAX: int = 8
 DISABLE_FORCED_TAKEOVER: bool = True
 OPENAI_CPA_WEBHOOK_SECRET = ""
-
+USE_ORIGINAL_PASSWORD_FLOW: bool = False
+CF_API_EMAIL: str = ""
+CF_API_KEY: str = ""
+TEAM_MODE_ENABLE: bool = False
+TEAM_MODE_OVERSPEED: bool = False
 def reset_sub2api_proxy_rotation():
     global _sub2api_proxy_rotation_index
     with _sub2api_proxy_rotation_lock:
@@ -388,6 +428,13 @@ def reload_all_configs(new_config_dict=None):
     global _c
     global WEB_PASSWORD
     global EMAIL_API_MODE, MAIL_DOMAINS, GPTMAIL_BASE, ADMIN_AUTH
+    global DISABLED_MAIL_DOMAINS
+    global ENABLE_MAIL_DOMAIN_RUNTIME_CONTROL
+    global ENABLE_MAIL_DOMAIN_GROUPING, MAIL_DOMAIN_GROUP_COUNT, MAIL_DOMAIN_GROUP_MODE
+    global MAIL_DOMAIN_GROUP_STRATEGY, MAIL_DOMAIN_GROUPS
+    global MAIL_DOMAIN_PINPOINT_BURST_MODE
+    global MAIL_DOMAIN_PREFER_LOW_FAILURE_MODE
+    global MAIL_DOMAIN_FAILURE_TYPES, MAIL_DOMAIN_FAIL_THRESHOLD, MAIL_DOMAIN_FAIL_COOLDOWN_SEC
     global ENABLE_SUB_DOMAINS, SUB_DOMAIN_COUNT
     global IMAP_SERVER, IMAP_PORT, IMAP_USER, IMAP_PASS
     global FREEMAIL_API_URL, FREEMAIL_API_TOKEN, FREEMAIL_LOCAL_WEBHOOK, FREEMAIL_WEBHOOK_SECRET
@@ -395,14 +442,14 @@ def reload_all_configs(new_config_dict=None):
     global MC_API_BASE, MC_KEY
     global DEFAULT_PROXY
     global SUB_DOMAIN_LEVEL, RANDOM_SUB_DOMAIN_LEVEL
-    global ENABLE_MULTI_THREAD_REG, REG_THREADS, MAX_OTP_RETRIES
+    global ENABLE_MULTI_THREAD_REG, REG_THREADS, MAX_OTP_RETRIES, OTP_POLL_MAX_ATTEMPTS
     global USE_PROXY_FOR_EMAIL, ENABLE_EMAIL_MASKING
     global LOGIN_DELAY_MIN, LOGIN_DELAY_MAX
     global ENABLE_CPA_MODE, SAVE_TO_LOCAL_IN_CPA_MODE
     global CPA_API_URL, CPA_API_TOKEN, MIN_ACCOUNTS_THRESHOLD, BATCH_REG_COUNT
     global MIN_REMAINING_WEEKLY_PERCENT, REMOVE_ON_LIMIT_REACHED, REMOVE_DEAD_ACCOUNTS
     global CPA_THREADS, CHECK_INTERVAL_MINUTES, ENABLE_TOKEN_REVIVE
-    global NORMAL_SLEEP_MIN, NORMAL_SLEEP_MAX, NORMAL_TARGET_COUNT
+    global NORMAL_SLEEP_MIN, NORMAL_SLEEP_MAX, NORMAL_TARGET_COUNT, NORMAL_SAVE_IMG_TO_LOCAL
     global _clash_enable, _clash_pool_mode, WARP_PROXY_LIST, PROXY_QUEUE, PROXY_QUEUE_GENERATION
     global _raw_proxy_enable, RAW_PROXY_LIST
     global CLASH_CLUSTER_COUNT, CLASH_SUB_URL
@@ -413,10 +460,12 @@ def reload_all_configs(new_config_dict=None):
     global SUB2API_ACCOUNT_CONCURRENCY, SUB2API_ACCOUNT_LOAD_FACTOR, SUB2API_ACCOUNT_PRIORITY, SUB2API_DEFAULT_PROXY
     global SUB2API_DEFAULT_PROXY_POOL
     global SUB2API_ACCOUNT_RATE_MULTIPLIER, SUB2API_ACCOUNT_GROUP_IDS, SUB2API_ENABLE_WS_MODE
+    global ENABLE_IMAGE2API_MODE, IMAGE2API_URL, IMAGE2API_KEY, IMAGE2API_RETAIN_REG_ONLY, IMAGE2API_IMG_ONLY_MODE
+    global CF_API_EMAIL, CF_API_KEY
     global LUCKMAIL_API_KEY, LUCKMAIL_PREFERRED_DOMAIN, LUCKMAIL_EMAIL_TYPE, LUCKMAIL_VARIANT_MODE, LUCKMAIL_REUSE_PURCHASED, LUCKMAIL_TAG_ID
     global HERO_SMS_ENABLED, HERO_SMS_API_KEY, HERO_SMS_BASE_URL, HERO_SMS_COUNTRY, HERO_SMS_SERVICE
     global HERO_SMS_AUTO_PICK_COUNTRY, HERO_SMS_REUSE_PHONE, HERO_SMS_MAX_PRICE, HERO_SMS_VERIFY_ON_REGISTER
-    global HERO_SMS_MIN_BALANCE, HERO_SMS_MAX_TRIES, HERO_SMS_POLL_TIMEOUT_SEC
+    global HERO_SMS_MIN_BALANCE, HERO_SMS_MAX_TRIES, HERO_SMS_POLL_TIMEOUT_SEC, HERO_SMS_USE_PROXY
     global AI_API_BASE, AI_API_KEY, AI_MODEL, AI_ENABLE_PROFILE
     global CPA_AUTO_CHECK, SUB2API_AUTO_CHECK
     global TG_BOT
@@ -426,27 +475,30 @@ def reload_all_configs(new_config_dict=None):
     global DUCKMAIL_API_URL, DUCKMAIL_DOMAIN, DUCKMAIL_MODE, DUCK_API_TOKEN, DUCK_COOKIE, DUCK_OFFICIAL_API_BASE
     global DUCKMAIL_FORWARD_MODE, DUCKMAIL_FORWARD_EMAIL
     global DUCK_USE_PROXY
-    global CLUSTER_NODE_NAME, CLUSTER_MASTER_URL, CLUSTER_SECRET
+    global CLUSTER_NODE_NAME, CLUSTER_MASTER_URL, CLUSTER_SECRET, CLUSTER_UPLOAD_TIMEOUT_SEC
+    global CLUSTER_SYNC_SHARED_DIR, CLUSTER_SYNC_IMPORT_POLL_SEC, CLUSTER_SYNC_MAX_RETRIES, CLUSTER_SYNC_PROGRESS_FLUSH_EVERY
+    global CLUSTER_SYNC_STALE_FILE_MAX_AGE_HOURS, CLUSTER_SYNC_MAX_FILE_SIZE_MB, CLUSTER_SYNC_MAX_RECORDS, CLUSTER_SYNC_REQUIRE_CUSTOM_SECRET
     global REG_MODE
     global LOCAL_MS_ENABLE_FISSION, LOCAL_MS_MASTER_EMAIL, LOCAL_MS_PASSWORD, LOCAL_MS_CLIENT_ID, LOCAL_MS_REFRESH_TOKEN, LOCAL_MS_POOL_FISSION
     global LOCAL_MS_SUFFIX_MODE, LOCAL_MS_SUFFIX_LEN_MIN, LOCAL_MS_SUFFIX_LEN_MAX
     global DB_TYPE, MYSQL_CFG
     global MAX_LOG_LINES
-    global CPA_RETAIN_REG_ONLY, SUB2API_RETAIN_REG_ONLY, RETAIN_REG_ONLY
+    global CPA_RETAIN_REG_ONLY, SUB2API_RETAIN_REG_ONLY, RETAIN_REG_ONLY, CPA_AUTO_RE_OAUTH, SUB2API_AUTO_RE_OAUTH
     global GMAIL_OAUTH_MASTER_EMAIL, GMAIL_OAUTH_FISSION_ENABLE, GMAIL_OAUTH_FISSION_MODE
     global GMAIL_OAUTH_SUFFIX_MODE, GMAIL_OAUTH_SUFFIX_LEN_MIN, GMAIL_OAUTH_SUFFIX_LEN_MAX
     global DISABLE_FORCED_TAKEOVER
     global SMSBOWER_ENABLED, SMSBOWER_API_KEY, SMSBOWER_BASE_URL, SMSBOWER_COUNTRY, SMSBOWER_SERVICE
-    global SMSBOWER_AUTO_PICK_COUNTRY, SMSBOWER_VERIFY_ON_REGISTER, SMSBOWER_REUSE_PHONE
-    global SMSBOWER_MAX_PRICE, SMSBOWER_MIN_BALANCE, SMSBOWER_MAX_TRIES, SMSBOWER_POLL_TIMEOUT_SEC, SMSBOWER_MIN_PRICE
+    global SMSBOWER_AUTO_PICK_COUNTRY, SMSBOWER_VERIFY_ON_REGISTER, SMSBOWER_REUSE_PHONE, SMSBOWER_OPERATOR, SMSBOWER_USE_PROXY
+    global SMSBOWER_MAX_PRICE, SMSBOWER_MIN_BALANCE, SMSBOWER_MAX_TRIES, SMSBOWER_POLL_TIMEOUT_SEC, SMSBOWER_MIN_PRICE, SMSBOWER_WEB_COOKIE
     global FIVESIM_ENABLED, FIVESIM_API_KEY, FIVESIM_SERVICE, FIVESIM_COUNTRY
     global FIVESIM_AUTO_PICK_COUNTRY, FIVESIM_VERIFY_ON_REGISTER, FIVESIM_REUSE_PHONE
-    global FIVESIM_MAX_PRICE, FIVESIM_MIN_PRICE, FIVESIM_MIN_BALANCE
-    global FIVESIM_MAX_TRIES, FIVESIM_POLL_TIMEOUT_SEC
+    global FIVESIM_MAX_PRICE, FIVESIM_MIN_PRICE, FIVESIM_MIN_BALANCE, FIVESIM_OPERATOR
+    global FIVESIM_MAX_TRIES, FIVESIM_POLL_TIMEOUT_SEC, FIVESIM_USE_PROXY
     global SMSBOWER_REUSE_PHONE, SMSBOWER_REUSE_MAX
     global HERO_SMS_REUSE_PHONE, HERO_SMS_REUSE_MAX
     global FIVESIM_REUSE_PHONE, FIVESIM_REUSE_MAX
-    global OPENAI_CPA_WEBHOOK_SECRET
+    global OPENAI_CPA_WEBHOOK_SECRET, USE_ORIGINAL_PASSWORD_FLOW
+    global TEAM_MODE_ENABLE, TEAM_MODE_OVERSPEED
     base_yaml_config = init_config()
 
     _db_conf = base_yaml_config.get("database", {})
@@ -516,6 +568,27 @@ def reload_all_configs(new_config_dict=None):
             return max(minimum, parsed)
         return parsed
 
+    def normalize_domain_list(value):
+        items = value if isinstance(value, list) else []
+        seen = set()
+        domains = []
+        for item in items:
+            text = str(item or "").strip().lower().strip(".")
+            if text and text not in seen:
+                seen.add(text)
+                domains.append(text)
+        return domains
+
+    def normalize_mail_domain_string(value):
+        seen = set()
+        domains = []
+        for part in str(value or "").split(","):
+            text = str(part or "").strip().lower().strip(".")
+            if text and text not in seen:
+                seen.add(text)
+                domains.append(text)
+        return domains
+
     def safe_bool(value, default=False):
         if isinstance(value, bool):
             return value
@@ -546,6 +619,40 @@ def reload_all_configs(new_config_dict=None):
 
     EMAIL_API_MODE = _c.get("email_api_mode", "cloudflare_temp_email")
     MAIL_DOMAINS = _c.get("mail_domains", "")
+    DISABLED_MAIL_DOMAINS = normalize_domain_list(_c.get("disabled_mail_domains", []))
+    ENABLE_MAIL_DOMAIN_RUNTIME_CONTROL = safe_bool(_c.get("enable_mail_domain_runtime_control", False), default=False)
+    ENABLE_MAIL_DOMAIN_GROUPING = safe_bool(_c.get("enable_mail_domain_grouping", False), default=False)
+    MAIL_DOMAIN_GROUP_COUNT = safe_int(_c.get("mail_domain_group_count", 2), default=2, minimum=1)
+    MAIL_DOMAIN_GROUP_COUNT = min(10, MAIL_DOMAIN_GROUP_COUNT)
+    MAIL_DOMAIN_GROUP_MODE = str(_c.get("mail_domain_group_mode", "auto") or "auto").strip().lower()
+    if MAIL_DOMAIN_GROUP_MODE not in {"auto", "manual"}:
+        MAIL_DOMAIN_GROUP_MODE = "auto"
+    MAIL_DOMAIN_GROUP_STRATEGY = str(_c.get("mail_domain_group_strategy", "round_robin") or "round_robin").strip().lower()
+    if MAIL_DOMAIN_GROUP_STRATEGY not in {"round_robin", "exhaust_then_next"}:
+        MAIL_DOMAIN_GROUP_STRATEGY = "round_robin"
+    raw_mail_domain_groups = _c.get("mail_domain_groups", [])
+    if not isinstance(raw_mail_domain_groups, list):
+        raw_mail_domain_groups = []
+    MAIL_DOMAIN_GROUPS = [
+        ",".join(normalize_mail_domain_string(item))
+        for item in raw_mail_domain_groups[:MAIL_DOMAIN_GROUP_COUNT]
+    ]
+    while len(MAIL_DOMAIN_GROUPS) < MAIL_DOMAIN_GROUP_COUNT:
+        MAIL_DOMAIN_GROUPS.append("")
+    MAIL_DOMAIN_PINPOINT_BURST_MODE = safe_bool(_c.get("mail_domain_pinpoint_burst_mode", False), default=False)
+    MAIL_DOMAIN_PREFER_LOW_FAILURE_MODE = safe_bool(_c.get("mail_domain_prefer_low_failure_mode", False), default=False)
+    if ENABLE_MAIL_DOMAIN_GROUPING:
+        MAIL_DOMAIN_PINPOINT_BURST_MODE = False
+    if MAIL_DOMAIN_PINPOINT_BURST_MODE and MAIL_DOMAIN_PREFER_LOW_FAILURE_MODE:
+        MAIL_DOMAIN_PREFER_LOW_FAILURE_MODE = False
+    MAIL_DOMAIN_FAILURE_TYPES = [
+        str(item or "").strip().lower()
+        for item in (_c.get("mail_domain_failure_types", ["discarded_email"]) or ["discarded_email"])
+        if str(item or "").strip()
+    ]
+    MAIL_DOMAIN_FAILURE_TYPES = list(dict.fromkeys(MAIL_DOMAIN_FAILURE_TYPES)) or ["discarded_email"]
+    MAIL_DOMAIN_FAIL_THRESHOLD = safe_int(_c.get("mail_domain_fail_threshold", 3), default=3, minimum=0)
+    MAIL_DOMAIN_FAIL_COOLDOWN_SEC = safe_int(_c.get("mail_domain_fail_cooldown_sec", 600), default=600, minimum=0)
     GPTMAIL_BASE = str(_c.get("gptmail_base", "")).strip().rstrip("/")
     ADMIN_AUTH = _c.get("admin_auth", "")
 
@@ -594,15 +701,19 @@ def reload_all_configs(new_config_dict=None):
     MC_API_BASE = str(_mc.get("api_base", "")).strip().rstrip("/")
     MC_KEY = _mc.get("key", "")
 
+    CF_API_EMAIL = _c.get("cf_api_email", "")
+    CF_API_KEY = _c.get("cf_api_key", "")
 
     _ocpa = _c.get("openai_cpa", {})
     OPENAI_CPA_WEBHOOK_SECRET = str(_ocpa.get("webhook_secret", "")).strip()
+    USE_ORIGINAL_PASSWORD_FLOW = bool(_ocpa.get("use_original_password_flow", False))
 
     DEFAULT_PROXY = format_docker_url(_c.get("default_proxy", ""))
 
     ENABLE_MULTI_THREAD_REG = _c.get("enable_multi_thread_reg", False)
     REG_THREADS = _c.get("reg_threads", 3)
     MAX_OTP_RETRIES = _c.get("max_otp_retries", 5)
+    OTP_POLL_MAX_ATTEMPTS = _c.get("otp_poll_max_attempts", 20)
     USE_PROXY_FOR_EMAIL = _c.get("use_proxy_for_email", False)
     ENABLE_EMAIL_MASKING = _c.get("enable_email_masking", True)
 
@@ -624,6 +735,7 @@ def reload_all_configs(new_config_dict=None):
     ENABLE_TOKEN_REVIVE = _cpa.get("enable_token_revive", False)
     CPA_AUTO_CHECK = _cpa.get("auto_check", True)
     CPA_RETAIN_REG_ONLY = safe_bool(_cpa.get("retain_reg_only", False))
+    CPA_AUTO_RE_OAUTH = safe_bool(_cpa.get("auto_re_oauth", False))
 
     _sub2api = _c.get("sub2api_mode", {})
     ENABLE_SUB2API_MODE = _sub2api.get("enable", False)
@@ -646,6 +758,7 @@ def reload_all_configs(new_config_dict=None):
     SUB2API_ACCOUNT_GROUP_IDS = parse_group_ids(_sub2api.get("account_group_ids", ""))
     SUB2API_ENABLE_WS_MODE = safe_bool(_sub2api.get("enable_ws_mode", True), default=True)
     SUB2API_RETAIN_REG_ONLY = safe_bool(_sub2api.get("retain_reg_only", False))
+    SUB2API_AUTO_RE_OAUTH = safe_bool(_sub2api.get("auto_re_oauth", False))
 
     raw_sub2api_default_proxy = _sub2api.get("default_proxy", "")
 
@@ -657,12 +770,21 @@ def reload_all_configs(new_config_dict=None):
         format_docker_url(item)
         for item in get_valid_sub2api_proxy_urls(raw_sub2api_default_proxy)
     ]
+
+    _image2api = _c.get("image2api_mode", {})
+    ENABLE_IMAGE2API_MODE = safe_bool(_image2api.get("enable", False))
+    IMAGE2API_URL = format_docker_url(str(_image2api.get("api_url", "")).strip()).rstrip("/")
+    IMAGE2API_KEY = str(_image2api.get("api_key", "")).strip()
+    IMAGE2API_RETAIN_REG_ONLY = safe_bool(_image2api.get("retain_reg_only", False))
+    IMAGE2API_IMG_ONLY_MODE = safe_bool(_image2api.get("img_only_mode", False))
+
     reset_sub2api_proxy_rotation()
     _normal = _c.get("normal_mode", {})
     NORMAL_SLEEP_MIN = _normal.get("sleep_min", 5)
     NORMAL_SLEEP_MAX = _normal.get("sleep_max", 30)
     NORMAL_TARGET_COUNT = _normal.get("target_count", 0)
-
+    NORMAL_SAVE_IMG_TO_LOCAL = safe_bool(_normal.get("save_img_to_local", False))
+    
     _clash_conf = _c.get("clash_proxy_pool", {})
     _clash_enable = _clash_conf.get("enable", False)
     _clash_pool_mode = _clash_conf.get("pool_mode", False)
@@ -717,8 +839,8 @@ def reload_all_configs(new_config_dict=None):
     HERO_SMS_AUTO_PICK_COUNTRY = _hero_sms_conf.get("auto_pick_country", False)
     HERO_SMS_REUSE_PHONE = _hero_sms_conf.get("reuse_phone", True)
     HERO_SMS_VERIFY_ON_REGISTER = _hero_sms_conf.get("verify_on_register", False)
+    HERO_SMS_USE_PROXY = safe_bool(_hero_sms_conf.get("use_proxy", False), default=False)
     HERO_SMS_REUSE_MAX = safe_int(_hero_sms_conf.get("reuse_max", 2), default=2)
-
     try:
         HERO_SMS_MAX_PRICE = float(_hero_sms_conf.get("max_price", 2.0))
     except:
@@ -754,7 +876,9 @@ def reload_all_configs(new_config_dict=None):
     SMSBOWER_POLL_TIMEOUT_SEC = safe_int(_smsbower.get("poll_timeout_sec", 120), default=120)
     SMSBOWER_MIN_PRICE = safe_float(_smsbower.get("min_price", 0.05), default=0.05)
     SMSBOWER_REUSE_MAX = safe_int(_smsbower.get("reuse_max", 2), default=2)
-
+    SMSBOWER_OPERATOR = str(_smsbower.get("operator", ) or "").strip()
+    SMSBOWER_USE_PROXY = safe_bool(_smsbower.get("use_proxy", False), default=False)
+    SMSBOWER_WEB_COOKIE = str(_smsbower.get("web_cookie", ) or "").strip()
     _fivesim = _c.get("fivesim", {})
     FIVESIM_ENABLED = safe_bool(_fivesim.get("enabled", False), default=False)
     FIVESIM_API_KEY = str(_fivesim.get("api_key") or "").strip()
@@ -762,6 +886,7 @@ def reload_all_configs(new_config_dict=None):
     FIVESIM_COUNTRY = str(_fivesim.get("country") or "any").strip()
     FIVESIM_AUTO_PICK_COUNTRY = safe_bool(_fivesim.get("auto_pick_country", True), default=True)
     FIVESIM_VERIFY_ON_REGISTER = safe_bool(_fivesim.get("verify_on_register", False), default=False)
+    FIVESIM_USE_PROXY = safe_bool(_fivesim.get("use_proxy", False), default=False)
     FIVESIM_REUSE_PHONE = safe_bool(_fivesim.get("reuse_phone", True), default=True)
     FIVESIM_MAX_PRICE = safe_float(_fivesim.get("max_price", 50.0), default=50.0)
     FIVESIM_MIN_PRICE = safe_float(_fivesim.get("min_price", 0.0), default=0.0)
@@ -769,7 +894,7 @@ def reload_all_configs(new_config_dict=None):
     FIVESIM_MAX_TRIES = safe_int(_fivesim.get("max_tries", 3), default=3)
     FIVESIM_POLL_TIMEOUT_SEC = safe_int(_fivesim.get("poll_timeout_sec", 180), default=180)
     FIVESIM_REUSE_MAX = safe_int(_fivesim.get("reuse_max", 2), default=2)
-
+    FIVESIM_OPERATOR = str(_fivesim.get("operator", ) or "").strip()
 
     _ai = _c.get("ai_service", {})
     AI_API_BASE = str(_ai.get("api_base", "https://api.openai.com/v1")).strip().rstrip("/")
@@ -804,8 +929,17 @@ def reload_all_configs(new_config_dict=None):
     CLUSTER_NODE_NAME = str(_c.get("cluster_node_name", "")).strip()
     CLUSTER_MASTER_URL = str(_c.get("cluster_master_url", "")).strip().rstrip("/")
     CLUSTER_SECRET = str(_c.get("cluster_secret", "wenfxl666")).strip()
+    CLUSTER_UPLOAD_TIMEOUT_SEC = min(3600, safe_int(_c.get("cluster_upload_timeout_sec", 15), 15, minimum=15))
+    CLUSTER_SYNC_SHARED_DIR = str(_c.get("cluster_sync_shared_dir", "data/cluster_sync") or "data/cluster_sync").strip() or "data/cluster_sync"
+    CLUSTER_SYNC_IMPORT_POLL_SEC = safe_int(_c.get("cluster_sync_import_poll_sec", 2), 2, minimum=1)
+    CLUSTER_SYNC_MAX_RETRIES = safe_int(_c.get("cluster_sync_max_retries", 3), 3, minimum=0)
+    CLUSTER_SYNC_PROGRESS_FLUSH_EVERY = safe_int(_c.get("cluster_sync_progress_flush_every", 100), 100, minimum=1)
+    CLUSTER_SYNC_STALE_FILE_MAX_AGE_HOURS = safe_int(_c.get("cluster_sync_stale_file_max_age_hours", 12), 12, minimum=1)
+    CLUSTER_SYNC_MAX_FILE_SIZE_MB = safe_int(_c.get("cluster_sync_max_file_size_mb", 20), 20, minimum=1)
+    CLUSTER_SYNC_MAX_RECORDS = safe_int(_c.get("cluster_sync_max_records", 100000), 100000, minimum=1)
+    CLUSTER_SYNC_REQUIRE_CUSTOM_SECRET = safe_bool(_c.get("cluster_sync_require_custom_secret", True), default=True)
 
-    REG_MODE = str(_c.get("reg_mode", "protocol")).strip().lower()
+    REG_MODE = str(_c.get("reg_mode", "email")).strip().lower()
 
     _temporam = _c.get("temporam", {})
     TEMPORAM_COOKIE = str(_temporam.get("cookie") or "").strip()
@@ -828,6 +962,11 @@ def reload_all_configs(new_config_dict=None):
     GMAIL_OAUTH_SUFFIX_LEN_MAX = int(_gmail.get("suffix_len_max", 8))
 
     DISABLE_FORCED_TAKEOVER = safe_bool(_c.get("disable_forced_takeover", True))
+
+    global TEAM_MODE_ENABLE
+    _team = _c.get("team_mode", {})
+    TEAM_MODE_ENABLE = safe_bool(_team.get("enable", False))
+    TEAM_MODE_OVERSPEED = safe_bool(_team.get("overspeed", False))
 
     reload_proxy_config()
     print(f"[{ts()}] [系统] 核心配置已完成同步。")

@@ -2,6 +2,7 @@ import os
 import random
 import string
 import time
+import json
 import socket
 import base64
 import httplib2
@@ -151,25 +152,32 @@ class GmailFissionService:
         }
 
     def fetch_openai_messages(self, mailbox: dict) -> List[Dict[str, Any]]:
-        socket.setdefaulttimeout(15)
-        config_dir = os.path.dirname(cfg.CONFIG_PATH)
-        token_path = os.path.join(config_dir, "token.json")
-        if not os.path.exists(token_path): return []
+        socket.setdefaulttimeout(60)
+
+        token_json_str = db_manager.get_sys_kv('gmail_token_json')
+        if not token_json_str:
+            print(f"[{cfg.ts()}] [GmailFission] 数据库缺失 Token，跳过扫信")
+            return []
 
         proxy_url = self.proxies.get('https') or self.proxies.get('http') if self.proxies else None
         GmailOAuthHandler._set_proxy(proxy_url)
 
         try:
-            creds = Credentials.from_authorized_user_file(token_path, ['https://www.googleapis.com/auth/gmail.modify'])
+            creds_info = json.loads(token_json_str)
+            creds = Credentials.from_authorized_user_info(creds_info, ['https://www.googleapis.com/auth/gmail.modify'])
+
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
-                with open(token_path, 'w') as f: f.write(creds.to_json())
-
+                db_manager.set_sys_kv('gmail_token_json', creds.to_json())
+                print(f"[{cfg.ts()}] [Gmail] 授权已自动刷新并同步回数据库")
             custom_http = None
             if proxy_url and proxy_url.startswith("socks5"):
                 parsed = urllib.parse.urlparse(proxy_url)
-                proxy_info = httplib2.ProxyInfo(proxy_type=socks.PROXY_TYPE_SOCKS5, proxy_host=parsed.hostname,
-                                                proxy_port=parsed.port)
+                proxy_info = httplib2.ProxyInfo(
+                    proxy_type=socks.PROXY_TYPE_SOCKS5,
+                    proxy_host=parsed.hostname,
+                    proxy_port=parsed.port
+                )
                 custom_http = httplib2.Http(proxy_info=proxy_info)
 
             if custom_http:
@@ -220,7 +228,7 @@ class GmailFissionService:
             return formatted_messages
 
         except Exception as e:
-            print(f"[{cfg.ts()}] [GmailFission] 扫信逻辑异常: {e}")
+            print(f"[{cfg.ts()}] [Gmail] 扫信逻辑异常: {e}")
             return []
         finally:
             GmailOAuthHandler._clear_proxy()

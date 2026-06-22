@@ -2,7 +2,7 @@ import re
 import time
 from curl_cffi import requests
 from utils import config as cfg
-
+from curl_cffi import CurlHttpVersion
 
 class GeneratorEmailService:
     def __init__(self, proxies=None):
@@ -44,8 +44,10 @@ class GeneratorEmailService:
                 headers=self.headers,
                 proxies=self.proxies,
                 timeout=self.timeout,
-                impersonate="chrome110"
+                impersonate="chrome110",
+                http_version=CurlHttpVersion.V1_1
             )
+
             if resp.status_code == 200:
                 email = self._parse_email(resp.text)
                 if email:
@@ -103,7 +105,8 @@ class GeneratorEmailService:
                 cookies=cookies,
                 proxies=self.proxies,
                 timeout=self.timeout,
-                impersonate="chrome110"
+                impersonate="chrome110",
+                http_version=CurlHttpVersion.V1_1
             )
             if resp.status_code == 200:
                 html = resp.text or ""
@@ -120,11 +123,12 @@ class GeneratorEmailService:
                     })
                 return results
         except Exception as e:
-            print(f"获取邮件列表异常: {e}")
+            print(f"[{cfg.ts()}] [ERROR] 获取邮件列表异常: {e}")
         return []
 
 
     def get_code_from_detail(self, href: str, surl: str) -> str:
+        from utils.email_providers.mail_service import _extract_otp_code,_clean_html_to_text
         if not href:
             return ""
 
@@ -138,28 +142,15 @@ class GeneratorEmailService:
                 cookies=cookies,
                 proxies=self.proxies,
                 timeout=self.timeout,
-                impersonate="chrome110"
+                impersonate="chrome110",
+                http_version=CurlHttpVersion.V1_1
             )
             if resp.status_code == 200:
                 raw_html = resp.text or ""
-                clean_html = re.sub(r'<[^>]+>', ' ', raw_html)
-
-                new_format = re.findall(r"enter this code:\s*(\d{6})", clean_html, re.I)
-                if not new_format:
-                    new_format = re.findall(r"verification code to continue:\s*(\d{6})", clean_html, re.I)
-
-                if new_format:
-                    return new_format[-1]
-
-                direct = re.findall(r"Your ChatGPT code is (\d{6})", clean_html, re.I)
-                if direct:
-                    return direct[-1]
-
-                if "openai" in clean_html.lower() or "chatgpt" in clean_html.lower():
-                    generic = re.findall(r"\b(\d{6})\b", clean_html)
-                    if generic:
-                        return generic[-1]
-
+                clean_text = _clean_html_to_text(raw_html)
+                code = _extract_otp_code(clean_text)
+                if code:
+                    return code
         except Exception as e:
-            print(f"提取详情页验证码异常: {e}")
+            print(f"[{cfg.ts()}] [ERROR] 提取详情页验证码异常: {e}")
         return ""

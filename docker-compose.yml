@@ -5,7 +5,7 @@ services:
     image: wenfxl/wenfxl-codex-manager:latest
     container_name: wenfxl_codex_manager
     ports:
-      - "8000:8000"
+      - "${WEB_PORT:-8000}:8000"
     restart: always
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -14,10 +14,16 @@ services:
     volumes:
       - ./data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - .:${PWD}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=openai-cpa"
+
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 86400 --cleanup
+    command: --label-enable --scope openai-cpa --interval 86400 --cleanup

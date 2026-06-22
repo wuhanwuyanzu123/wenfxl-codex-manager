@@ -1,0 +1,22 @@
+services:
+  codex-web:
+    image: wenfxl/wenfxl-codex-manager:latest
+    container_name: wenfxl_codex_manager
+    ports:
+      - 8000:8000
+    restart: always
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      - HOST_PROJECT_PATH=/opt/wenfxl-openai-cpa
+    volumes:
+      - ./data:/app/data
+      - ./data/wenfxl.license:/app/wenfxl.license:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - ./patches/routers/system_routes.py:/app/routers/system_routes.py:ro
+      - ./patches/routers/account_routes.py:/app/routers/account_routes.py:ro
+      - ./patches/static/js/app.js:/app/static/js/app.js:ro
+    labels:
+      com.centurylinklabs.watchtower.enable: true
+      com.centurylinklabs.watchtower.scope: openai-cpa

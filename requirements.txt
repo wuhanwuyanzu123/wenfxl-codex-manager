@@ -15,3 +15,5 @@ docker
 pymysql
 cryptography
 cachetools
+dnspython
+psutil

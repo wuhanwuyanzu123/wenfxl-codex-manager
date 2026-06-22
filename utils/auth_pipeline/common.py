@@ -142,7 +142,7 @@ def _otp_verify_loop(
     if first_send_url:
         try:
             sentinel_send = generate_payload(did=did, flow=flow, proxy=proxy, user_agent=current_ua,
-                                             impersonate="chrome110", ctx=ctx)
+                                             impersonate="chrome", ctx=ctx)
             send_headers = _oai_headers(did, {
                 "Referer": first_send_referer or referer,
                 "content-type": "application/json",
@@ -166,7 +166,7 @@ def _otp_verify_loop(
         if resend_attempt > 0:
             try:
                 sentinel_resend = generate_payload(did=did, flow=flow, proxy=proxy,
-                                                   user_agent=current_ua, impersonate="chrome110", ctx=ctx)
+                                                   user_agent=current_ua, impersonate="chrome", ctx=ctx)
                 resend_headers = _oai_headers(did, {
                     "Referer": referer,
                     "content-type": "application/json"
@@ -189,7 +189,7 @@ def _otp_verify_loop(
             continue
 
         sentinel_otp = generate_payload(did=did, flow=flow, proxy=proxy, user_agent=current_ua,
-                                        impersonate="chrome110", ctx=ctx)
+                                        impersonate="chrome", ctx=ctx)
         val_headers = _oai_headers(did, {
             "Referer": referer,
             "content-type": "application/json",
@@ -227,7 +227,7 @@ def _create_account_about_you(
           f"(昵称: {user_info['name']}, 生日: {user_info['birthdate']})...")
 
     sentinel_create = generate_payload(did=did, flow="create_account", proxy=proxy,
-                                       user_agent=current_ua, impersonate="chrome110", ctx=ctx)
+                                       user_agent=current_ua, impersonate="chrome", ctx=ctx)
     create_headers = _oai_headers(did, {
         "Referer": "https://auth.openai.com/about-you",
         "content-type": "application/json",

@@ -1,4 +1,278 @@
-const { createApp } = Vue;
+﻿const { createApp } = Vue;
+
+const LANGUAGE_STORAGE_KEY = 'ui_language_mode';
+const DEFAULT_LANGUAGE = 'zh-CN';
+const TRADITIONAL_LANGUAGE = 'zh-TW';
+const SUPPORTED_LANGUAGES = [DEFAULT_LANGUAGE, TRADITIONAL_LANGUAGE];
+
+function getInitialLanguage() {
+    const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return SUPPORTED_LANGUAGES.includes(savedLanguage) ? savedLanguage : DEFAULT_LANGUAGE;
+}
+
+let APP_LOCALE = getInitialLanguage();
+const APP_TIME_ZONE = 'Asia/Shanghai';
+
+const I18N_ZH_HANT_PHRASES = {
+    'Wenfxl 注册管理系统': 'Wenfxl 註冊管理系統',
+    '系统确认': '系統確認',
+    '确认执行': '確認執行',
+    '安全级控制台登录': '安全級控制台登入',
+    '访问密码': '存取密碼',
+    '请输入系统密码': '請輸入系統密碼',
+    '安全登录': '安全登入',
+    '日间模式': '日間模式',
+    '护眼模式': '護眼模式',
+    '日间': '日間',
+    '护眼': '護眼',
+    '发现新版本，点击查看！': '發現新版本，點擊查看！',
+    '发现新版': '發現新版',
+    '运行主页': '執行主頁',
+    '集群总控': '集群總控',
+    '邮箱配置': '信箱配置',
+    '微软邮箱库': '微軟信箱庫',
+    'Team 账号库': 'Team 帳號庫',
+    '账号库存': '帳號庫存',
+    '云端库存': '雲端庫存',
+    '手机接码': '手機接碼',
+    '网络代理': '網路代理',
+    '中转管仓': '中轉管倉',
+    '消息通知': '訊息通知',
+    '并发与系统': '並發與系統',
+    '重启项目': '重啟專案',
+    '检查更新': '檢查更新',
+    '检查系统更新': '檢查系統更新',
+    '退出登录': '登出',
+    '模式: 常规量产': '模式: 常規量產',
+    '常规量产': '常規量產',
+    '常规': '常規',
+    '量产': '量產',
+    '模式': '模式',
+    '成功': '成功',
+    '总': '總',
+    '运行模式切换': '執行模式切換',
+    '协议': '協議',
+    '运行中': '執行中',
+    '运行': '執行',
+    '已停止': '已停止',
+    '停止': '停止',
+    '启动': '啟動',
+    '成功率': '成功率',
+    '失败': '失敗',
+    '可用域名': '可用網域',
+    '冷却域名': '冷卻網域',
+    '风控拦截': '風控攔截',
+    '密码受阻': '密碼受阻',
+    '出现手机': '出現手機',
+    '总耗时': '總耗時',
+    '平均': '平均',
+    '保存并热重载配置': '儲存並熱重載配置',
+    '保存配置': '儲存配置',
+    '实时运行日志': '即時執行日誌',
+    '系统待命，日志将在此打印...': '系統待命，日誌將在此列印...',
+    '分布式节点通信配置': '分散式節點通訊配置',
+    '本节点名称 (Node Name)': '本節點名稱 (Node Name)',
+    '主控台地址 (Master URL)': '主控台位址 (Master URL)',
+    '集群通信密钥 (Secret)': '集群通訊密鑰 (Secret)',
+    '等待远程节点接入... (请确保子机已配置上方的主控台地址)': '等待遠端節點接入... (請確保子機已配置上方的主控台位址)',
+    '本地账号库': '本機帳號庫',
+    '刷新列表': '重新整理列表',
+    '搜索本地账号...': '搜尋本機帳號...',
+    '导出全部': '匯出全部',
+    '清空库': '清空庫',
+    '已选': '已選',
+    '导出': '匯出',
+    '账密': '帳密',
+    '推送': '推送',
+    '凭证': '憑證',
+    '删除选中': '刪除選取',
+    '账号总数': '帳號總數',
+    '未推送库存': '未推送庫存',
+    '活跃状态': '活躍狀態',
+    '已禁用': '已停用',
+    '账号 & 密码': '帳號 & 密碼',
+    '当前状态': '目前狀態',
+    '推送平台': '推送平台',
+    '入库时间': '入庫時間',
+    '操作': '操作',
+    '暂无本地记录': '暫無本機記錄',
+    '无': '無',
+    '共': '共',
+    '个': '個',
+    '第': '第',
+    '页': '頁',
+    '条/页': '筆/頁',
+    '前往': '前往',
+    '批量导入邮箱': '批次匯入信箱',
+    '在此粘贴数据...': '在此貼上資料...',
+    '微软邮箱资源库': '微軟信箱資源庫',
+    '搜索微软邮箱...': '搜尋微軟信箱...',
+    '导出 TXT': '匯出 TXT',
+    '恢复正常': '恢復正常',
+    '邮箱账号': '信箱帳號',
+    '鉴权类型': '鑑權類型',
+    '状态': '狀態',
+    '分裂次数': '分裂次數',
+    '导入时间': '匯入時間',
+    '暂无邮箱数据，请点击右上角导入': '暫無信箱資料，請點擊右上角匯入',
+    '未使用': '未使用',
+    '已注册 (被占用)': '已註冊 (被占用)',
+    '已出凭证': '已出憑證',
+    '失效/死号': '失效/死號',
+    '去授权': '去授權',
+    '上一页': '上一頁',
+    '下一页': '下一頁',
+    '基础发信设置': '基礎寄信設定',
+    'API 模式选择': 'API 模式選擇',
+    '本地微软邮箱库': '本機微軟信箱庫',
+    '发信域名池': '寄信網域池',
+    '支持逗号分隔多域名，此处必须填写你配置在 CF 的主域名': '支援逗號分隔多網域，此處必須填寫你配置在 CF 的主網域',
+    '黄金矿工模式': '黃金礦工模式',
+    '开启后按主域统计异常，并在超限后自动冷却。': '開啟後按主網域統計異常，並在超限後自動冷卻。',
+    '冷却阈值': '冷卻閾值',
+    '冷却秒数': '冷卻秒數',
+    '异常判断逻辑': '異常判斷邏輯',
+    '邮件丢弃异常': '郵件丟棄異常',
+    '网络异常': '網路異常',
+    '容量超限异常': '容量超限異常',
+    '域名列表': '網域列表',
+    '展开状态': '展開狀態',
+    '隐藏状态': '隱藏狀態',
+    '清除冷却': '清除冷卻',
+    '清空计数': '清空計數',
+    '异常': '異常',
+    '时间': '時間',
+    'CF 登录账号': 'CF 登入帳號',
+    '填写邮箱': '填寫信箱',
+    '复制': '複製',
+    '通用步骤': '通用步驟',
+    '说明': '說明',
+    '域名托管与 NS 获取': '網域代管與 NS 取得',
+    '激活 CF 电子邮件服务': '啟用 CF 電子郵件服務',
+    '域名状态与 NS 结果反馈': '網域狀態與 NS 結果回饋',
+    '关闭面板': '關閉面板',
+    '等待 NS 生效': '等待 NS 生效',
+    '多级域名泛解析模式': '多級網域泛解析模式',
+    '域名层级': '網域層級',
+    '层级随机选项': '層級隨機選項',
+    '获取邮箱使用全局代理穿透': '取得信箱使用全域代理穿透',
+    '隐藏日志中的邮箱域名': '隱藏日誌中的信箱網域',
+    '渠道专属参数': '渠道專屬參數',
+    '当前模式': '目前模式',
+    '强烈建议': '強烈建議',
+    '后端 API 基础地址': '後端 API 基礎位址',
+    '管理员鉴权': '管理員鑑權',
+    '原版部署': '原版部署',
+    '服务器地址': '伺服器位址',
+    '端口': '連接埠',
+    '接收邮箱': '接收信箱',
+    '应用专用密码': '應用程式專用密碼',
+    '创建谷歌专属密码': '建立 Google 專屬密碼',
+    '开启手动无限裂变': '開啟手動無限裂變',
+    '微软邮箱库分裂': '微軟信箱庫分裂',
+    '全局 Client ID': '全域 Client ID',
+    '裂变主邮箱账号': '裂變主信箱帳號',
+    '邮箱别名后缀生成模式': '信箱別名後綴生成模式',
+    '固定长度随机': '固定長度隨機',
+    '随机范围区间': '隨機範圍區間',
+    '高拟真模式': '高擬真模式',
+    '别名最小长度': '別名最小長度',
+    '别名最大长度': '別名最大長度',
+    '主邮箱 Refresh Token': '主信箱 Refresh Token',
+    '别名策略': '別名策略',
+    '后缀生成器设置': '後綴產生器設定',
+    '生成模式': '生成模式',
+    '最小长度': '最小長度',
+    '最大长度': '最大長度',
+    '已切换为护眼模式': '已切換為護眼模式',
+    '已切换为日间模式': '已切換為日間模式',
+    '已切换为繁体中文': '已切換為繁體中文',
+    '已切换为简体中文': '已切換為簡體中文',
+    '登录状态过期，请重新登录！': '登入狀態過期，請重新登入！',
+    '请输入密码！': '請輸入密碼！',
+    '内存预测数据获取失败': '記憶體(內存)預測資料取得失敗',
+    '内存预测 API 请求失败': '記憶體(內存)預測 API 請求失敗',
+    '未启动': '未啟動',
+    '无数据': '無資料',
+    '检查中...': '檢查中...'
+};
+
+const I18N_ZH_HANT_CHARS = {
+    '账':'帳','号':'號','库':'庫','邮':'郵','箱':'箱','运':'運','行':'行','页':'頁','总':'總','控':'控','微':'微','软':'軟','云':'雲','网':'網','络':'路','转':'轉','仓':'倉','并':'並','发':'發','与':'與','统':'統','访':'訪','问':'問','码':'碼','请':'請','输':'輸','入':'入','级':'級','录':'錄','间':'間','护':'護','眼':'眼','现':'現','版':'版','点':'點','击':'擊','查':'查','项':'項','检':'檢','退':'退','出':'出','协':'協','议':'議','启':'啟','动':'動','风':'風','拦':'攔','截':'截','败':'敗','却':'卻','域':'域','名':'名','时':'時','实':'實','热':'熱','载':'載','配':'配','置':'置','节':'節','通':'通','讯':'訊','钥':'鑰','远':'遠','确':'確','保':'保','机':'機','导':'導','删':'刪','选':'選','态':'態','禁':'禁','用':'用','当':'當','前':'前','暂':'暫','记':'記','据':'據','权':'權','鉴':'鑑','类':'類','裂':'裂','数':'數','础':'礎','择':'擇','临':'臨','连':'連','仅':'僅','显':'顯','示':'示','进':'進','程':'程','内':'內','计':'計','阈':'閾','值':'值','逻':'邏','辑':'輯','丢':'丟','弃':'棄','异':'異','额':'額','闭':'閉','复':'復','随':'隨','单':'單','专':'專','属':'屬','参':'參','强':'強','国':'國','务':'務','获':'獲','取':'取','层':'層','写':'寫','贴':'貼','资':'資','源':'源','证':'證','损':'損','坏':'壞','应':'應','创':'創','圆':'圓','长':'長','拟':'擬','真':'真','毕':'畢','须':'須','刚':'剛','换':'換','为':'為','过':'過','求':'求','预':'預','测':'測','费':'費','隐':'隱','藏':'藏','关':'關','开':'開','面':'面','板':'板','结':'結','果':'果','馈':'饋','电':'電','子':'子','件':'件','制':'製','粘':'黏','条':'筆','个':'個','这':'這','无':'無','东':'東','滤':'濾','认':'認','执':'執','轻':'輕','则':'則','压':'壓','榨':'榨','释':'釋','侧':'側','际':'際','线':'線','扩':'擴','锁':'鎖','断':'斷','设':'設','标':'標','签':'籤','组':'組','频':'頻','宽':'寬','验':'驗','变':'變','错':'錯','误':'誤','华':'華','龙':'龍','门':'門','凤':'鳳','题':'題','见':'見','乌':'烏','兰':'蘭','说':'說','们':'們','区':'區','来':'來','试':'試','绪':'緒','调':'調','链':'鏈','边':'邊','后':'後','极':'極','员':'員','历':'歷','购':'購','将':'將','对':'對','该':'該','优':'優','于':'於','价':'價','买':'買','彻':'徹','触':'觸','余':'餘','规':'規','轮':'輪','产':'產','满':'滿','负':'負','维':'維','别':'別','迟':'遲','补':'補','尝':'嘗','货':'貨','冲':'衝','会':'會','续':'續','么':'麼','旧':'舊','约':'約','许':'許','准':'準','传':'傳','储':'儲','迁':'遷','键':'鍵','备':'備'
+};
+
+Object.assign(I18N_ZH_HANT_PHRASES, {
+    '准备': '準備',
+    '模块': '模組',
+    '控製台': '控制台',
+    '控制台': '控制台',
+    '链接': '網址',
+    '机制': '機制',
+    '浏览': '瀏覽',
+    '团队': '團隊',
+    '订阅': '訂閱',
+    '叢集通訊金鑰': '集群通訊密鑰',
+    '独享池': '獨享池',
+    '登陆': '登入',
+    '耗尽': '耗盡',
+    '独立测活': '獨立測活',
+    '杂項與安全控製': '雜項與安全控制',
+    '杂项与安全控制': '雜項與安全控制',
+    '范围': '範圍',
+    '併發與系统': '並發與系統',
+    '併發與系統': '並發與系統',
+    '内存': '記憶體(內存)'
+});
+
+const I18N_ZH_HANT_EXCEPTIONS = {
+    '控製台': '控制台',
+    '杂項與安全控製': '雜項與安全控制',
+    '雜項與安全控製': '雜項與安全控制',
+    '併發與系统': '並發與系統',
+    '併發與系統': '並發與系統',
+    '叢集通訊金鑰': '集群通訊密鑰'
+};
+
+const I18N_ZH_HANT_KEYS = Object.keys(I18N_ZH_HANT_PHRASES).sort((a, b) => b.length - a.length);
+const I18N_ORIGINAL_TEXT_NODES = new WeakMap();
+const I18N_ORIGINAL_ATTRS = new WeakMap();
+
+function translateText(text, language = APP_LOCALE) {
+    if (text === null || text === undefined || language !== TRADITIONAL_LANGUAGE) return text;
+    let translated = String(text);
+    I18N_ZH_HANT_KEYS.forEach((source) => {
+        translated = translated.split(source).join(I18N_ZH_HANT_PHRASES[source]);
+    });
+    translated = translated.replace(/[\u4e00-\u9fff]/g, (char) => I18N_ZH_HANT_CHARS[char] || char);
+    Object.entries(I18N_ZH_HANT_EXCEPTIONS).forEach(([source, target]) => {
+        translated = translated.split(source).join(target);
+    });
+    return translated;
+}
+
+function formatMainlandDateTime(date, options = {}) {
+    return new Intl.DateTimeFormat(APP_LOCALE, {
+        timeZone: APP_TIME_ZONE,
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        ...options
+    }).format(date).replace(/\//g, '-');
+}
+
+function formatMainlandTime(date) {
+    return new Intl.DateTimeFormat(APP_LOCALE, {
+        timeZone: APP_TIME_ZONE,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(date);
+}
 
 function normalizeBooleanLike(value, defaultValue = false) {
     if (value === true || value === false) {
@@ -19,29 +293,49 @@ function normalizeBooleanLike(value, defaultValue = false) {
     return defaultValue;
 }
 
+function normalizeMailDomainCsv(value) {
+    const seen = new Set();
+    return String(value || '')
+        .split(',')
+        .map(part => String(part || '').trim().toLowerCase().replace(/^\.+|\.+$/g, ''))
+        .filter(part => {
+            if (!part || seen.has(part)) return false;
+            seen.add(part);
+            return true;
+        });
+}
+
 createApp({
     data() {
         return {
-            appVersion: 'v12.2.2',
+            appVersion: '检查中...',
             isLoggedIn: !!localStorage.getItem('auth_token'),
             loginPassword: '',
             currentTab: window.location.hash.replace('#', '') || 'console',
+            currentLanguage: getInitialLanguage(),
+            languageObserver: null,
             isDarkMode: localStorage.getItem('ui_theme_mode') === 'dark',
 			showAccountsPlaintext: false,
             isRunning: false,
+            isLoadingConfig: false,
+            configLoadError: '',
+            mobileNavOpen: false,
             tabs: [
-                { id: 'console', name: '运行主页', icon: '💻' },
-                { id: 'cluster', name: '集群总控', icon: '🖥️' },
-                { id: 'email', name: '邮箱配置', icon: '📧' },
-                { id: 'mailboxes', name: '微软邮箱库', icon: '📬' },
-                { id: 'accounts', name: '账号库存', icon: '📦' },
-                { id: 'cloud', name: '云端库存', icon: '☁️' },
-                { id: 'sms', name: '手机接码', icon: '📱' },
+                    { id: 'console', name: '运行主页', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>' },
+                    { id: 'cluster', name: '集群总控', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>' },
+                    { id: 'email', name: '邮箱配置', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>' },
+                    { id: 'mailboxes', name: '微软邮箱库', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>' },
+                    { id: 'team_accounts', name: 'Team 账号库', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>' },
+                    { id: 'accounts', name: '账号库存', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>' },
+                    { id: 'image_accounts', name: '半成品库存', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>' },
+                    { id: 'cloud', name: '云端库存', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h11a5 5 0 00-.1-9.995A5.002 5.002 0 1010.5 6H9.75a4 4 0 00-6.75 9z"></path></svg>' },
+                    { id: 'sms', name: '手机接码', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>' },
+                    { id: 'proxy', name: '网络代理', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>' },
+                    { id: 'relay', name: '中转管仓', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h11a5 5 0 00-.1-9.995A5.002 5.002 0 1010.5 6H9.75a4 4 0 00-6.75 9z"></path></svg>' },
+                    { id: 'notify', name: '消息通知', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h6a3 3 0 013 3v1a3 3 0 01-3 3H9.436c-1.532 0-2.22.24-2.893.542z"></path></svg>' },
+                    { id: 'concurrency', name: '并发与系统', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>' },
 				// { id: 'cf_routes', name: 'CF 路由', icon: '🌍' },
-                { id: 'proxy', name: '网络代理', icon: '🌐' },
-                { id: 'relay', name: '中转管仓', icon: '☁️' },
-                { id: 'notify', name: '消息通知', icon: '📢' },
-                { id: 'concurrency', name: '并发与系统', icon: '⚙️' }
+
             ],
 			cfGlobalStatus: null,
 			isLoadingSync: false,
@@ -72,9 +366,17 @@ createApp({
             logBuffer: [],
             logFlushTimer: null,
             config: null,
+            mailDomainRuntimeStats: [],
+            mailDomainRuntimeStatsError: '',
+            mailDomainRuntimePanelCollapsed: normalizeBooleanLike(localStorage.getItem('mail_domain_runtime_panel_collapsed'), false),
+            mailDomainRuntimeLastFetchAt: 0,
+            mailDomainRuntimePollIntervalMs: 2500,
+            mailDomainRuntimeFetchPromise: null,
+            mailDomainRuntimeFetchQueued: false,
             blacklistStr: "",
             warpListStr: "",
             rawProxyListStr: "",
+            accountStatusFilter: 'all',
             accounts: [],
             selectedAccounts: [],
             hideRegisterOnlyAccounts: false,
@@ -86,12 +388,38 @@ createApp({
                 success: 0, failed: 0, retries: 0, total: 0, target: 0,
                 pwd_blocked: 0, phone_verify: 0,
                 success_rate: '0.0%', elapsed: '0.0s', avg_time: '0.0s', progress_pct: '0%',
-                mode: '未启动'
+                mode: '未启动',
+                memory: { rss_mb: null, predicted_mid_mb: null, predicted_high_mb: null, safety_level: 'unknown', safety_label: '无数据' }
+            },
+            memoryPrediction: null,
+            isLoadingMemoryPrediction: false,
+            memoryPredictionError: '',
+            cleanupMaintenance: {
+                loading: false,
+                actionLoading: false,
+                data: null,
+                error: '',
+                outputTail: []
+            },
+            inventoryStats: {
+                local: {
+                    total: 0,
+                    active: 0,
+                    disabled: 0,
+                    unpushed: 0,
+                    pushed: 0,
+                    credential: 0,
+                    image2api: 0,
+                    with_token: 0,
+                    reg_only: 0,
+                    imgsub2api: 0
+                },
+                cloud: { total: 0, cpa: 0, sub2api: 0, enabled: 0 }
             },
             statsTimer: null,
 
             showPwd: {
-                login: false, web: false, cf: false, imap: false, 
+                login: false, web: false, cf: false, imap: false,
                 free_token: false, free_pass: false,
                 cm: false, mc: false, clash: false, cpa: false, sub2api: false,
                 cf_key: false, cf_modal_key: false,
@@ -100,7 +428,7 @@ createApp({
                 ai_base: true, cluster_url: true, proxy: true, clash_api: true,
                 clash_test: true, tg_token: false, tg_chatid: false, cpa_url: true, sub_url: true,
                 cluster_secret: false, hero_key: false, duck_token: false, duck_cookie: false,
-                smsbower_key: false,fivesim_key: false,
+                smsbower_key: false,fivesim_key: false,smsbower_cookie: false,
                 luckmail: false,
                 temporam: false,
                 tmailor_token: false,
@@ -108,13 +436,24 @@ createApp({
                 subUrl: false,
                 showMailboxesPlaintext: false,
                 db_pass: false,
-                master_rt: false
+                master_rt: false,
+                image2api_url: true,
+                image2api_key: false
             },
 
             toasts: [],
             toastId: 0,
             confirmModal: { show: false, message: '', resolve: null },
             updateInfo: { hasUpdate: false, version: '', url: '', changelog: '' },
+            gitSync: {
+                loading: false,
+                actionLoading: false,
+                data: null,
+                error: '',
+                lastAction: '',
+                outputTail: [],
+                restartAfter: true
+            },
             sub2apiGroups: [],
             gmailOAuth: {
                 authUrl: '',
@@ -124,12 +463,20 @@ createApp({
             },
             isLoadingSub2APIGroups: false,
             cloudAccounts: [],
+            rawCloudAccounts: [],
             selectedCloud: [],
-            cloudFilters: ['sub2api', 'cpa'],
+            cloudFilters: ['sub2api', 'cpa', "image2api"],
             showCloudPlaintext: false,
             cloudPage: 1,
             cloudPageSize: 10,
             cloudTotal: 0,
+            cloudFetchState: {
+                loading: false,
+                currentType: '',
+                completed: 0,
+                total: 0,
+                message: ''
+            },
             localCheckTimes: {},
             localCloudDetails: {},
             isCloudActionLoading: false,
@@ -137,6 +484,9 @@ createApp({
             currentCloudDetail: null,
             nowTimestamp: Math.floor(Date.now() / 1000),
             clusterNodes: {},
+            clusterSyncTasks: [],
+            clusterSyncTasksLoading: false,
+            showClusterSyncErrors: true,
             mailboxes: [],
             selectedMailboxes: [],
             mailboxPage: 1,
@@ -161,7 +511,21 @@ createApp({
                 target: 'all',
                 count: 5,
                 instances: [],
-                groups: []
+                groups: [],
+                subscriptions: [],
+                mode: '',
+                message: '',
+                isDeploying: false,
+                runtimeActionLoading: false,
+                subscriptionActionLoading: false,
+                delayLoading: false,
+                activeGroupName: '',
+                view: 'groups',
+                nodeSelections: {},
+                delayResults: {},
+                newSubscriptionName: '',
+                newSubscriptionUrl: '',
+                makeSelectedSubscription: true
             },
             gmail_oauth_mode: {
                 master_email: '',
@@ -186,6 +550,41 @@ createApp({
             fivesimPrices: [],
             isLoadingFivesimPrices: false,
             isRestarting: false,
+            isRefreshingAccounts: false,
+            isTestingTg: false,
+            teamAccounts: [],
+            showImportTeamModal: false,
+            importTeamText: '',
+            isImportingTeam: false,
+            showTeamsPlaintext: false,
+            teamPage: 1,
+            teamPageSize: 50,
+            totalTeamAccounts: 0,
+            authResetModal: {
+                show: false,
+                clearLicense: true,
+                clearHwid: true,
+                clearLease: true
+            },
+            cfTools: {
+                workerName: 'openai-cpa',
+                deleteDomains: '',
+                results: [],
+                isHosting: false,
+                isEnablingEmail: false,
+                isDeploying: false,
+                isSettingCatchAll: false,
+                isDeletingHosting: false
+            },
+            isUpdatingSystem: false,
+            imageAccounts: [],
+            selectedImageAccounts: [],
+            searchImageAccounts: '',
+            imagePage: 1,
+            imagePageSize: 10,
+            totalImageAccounts: 0,
+            isUpgradingOAuthAll: false,
+            isUpgradingSelected: false,
         };
     },
     watch: {
@@ -200,10 +599,21 @@ createApp({
         searchMailboxes() {
             this.mailboxPage = 1;
             this.fetchMailboxes();
+        },
+        'config.email_api_mode'(nextMode) {
+            const supportedModes = ['cloudflare_temp_email', 'freemail', 'cloudmail', 'openai_cpa'];
+            if (!supportedModes.includes(String(nextMode || '').trim())) {
+                this.config.enable_mail_domain_runtime_control = false;
+                this.mailDomainRuntimeStats = [];
+                this.mailDomainRuntimeStatsError = '';
+                this.mailDomainRuntimeLastFetchAt = 0;
+            }
         }
     },
-    mounted() {
+    async mounted() {
+        this.applyLanguage(false);
         this.applyTheme();
+        await this.fetchSystemVersion();
         if (this.isLoggedIn) {
             this.initApp();
         }
@@ -216,9 +626,15 @@ createApp({
         this.timer = setInterval(() => {
             this.nowTimestamp = Math.floor(Date.now() / 1000);
         }, 1000);
+        this.startLanguageObserver();
+        this.$nextTick(() => this.applyLanguageToDom());
     },
     beforeUnmount() {
         if(this.statsTimer) clearInterval(this.statsTimer);
+        if (this.languageObserver) this.languageObserver.disconnect();
+        if (typeof document !== 'undefined') {
+            document.body.classList.remove('overflow-hidden');
+        }
     },
 	computed: {
         totalPages() {
@@ -233,12 +649,16 @@ createApp({
             return res;
         },
         filteredCloud() {
-            let res = this.cloudAccounts;
-            if (this.searchCloud) {
-                const term = this.searchCloud.toLowerCase();
-                res = res.filter(a => a.credential && a.credential.toLowerCase().includes(term));
-            }
-            return res;
+            return this.cloudAccounts;
+        },
+        activeCloudFilterLabel() {
+            if (!this.cloudFetchState.currentType) return '待命';
+            const labels = {
+                sub2api: 'Sub2API',
+                cpa: 'CPA',
+                image2api: 'Image2API'
+            };
+            return labels[this.cloudFetchState.currentType] || this.cloudFetchState.currentType;
         },
         filteredMailboxes() {
             let res = this.mailboxes;
@@ -253,9 +673,231 @@ createApp({
         },
         mailboxTotalPages() {
             return Math.ceil(this.totalMailboxes / this.mailboxPageSize) || 1;
+        },
+        availableMailDomainCount() {
+            return this.mailDomainRuntimeStats.filter(item => item && item.is_available).length;
+        },
+        cooldownMailDomainCount() {
+            return this.mailDomainRuntimeStats.filter(item => item && !item.is_available).length;
+        },
+        activeClashGroup() {
+            if (!this.clashPool?.activeGroupName) return null;
+            return (this.clashPool.groups || []).find(group => group.name === this.clashPool.activeGroupName) || null;
+        },
+        selectedClashSubscription() {
+            return (this.clashPool?.subscriptions || []).find(item => item.selected) || null;
+        },
+        normalizedMailDomains() {
+            if (!this.config) return [];
+            return normalizeMailDomainCsv(this.config.mail_domains);
+        },
+        autoMailDomainGroupsPreview() {
+            if (!this.config || !this.config.enable_mail_domain_grouping || this.config.mail_domain_group_mode !== 'auto') {
+                return [];
+            }
+            const domains = this.normalizedMailDomains;
+            const groupCount = Math.min(10, Math.max(1, parseInt(this.config.mail_domain_group_count, 10) || 0));
+            if (domains.length === 0 || groupCount < 1 || groupCount > domains.length) {
+                return [];
+            }
+            const groups = Array.from({ length: groupCount }, () => []);
+            domains.forEach((domain, index) => {
+                groups[index % groupCount].push(domain);
+            });
+            return groups;
+        },
+        mailDomainGroupLabelMap() {
+            if (!this.config || !this.config.enable_mail_domain_grouping) {
+                return {};
+            }
+            const groups = this.config.mail_domain_group_mode === 'manual'
+                ? this.config.mail_domain_groups
+                    .map(group => normalizeMailDomainCsv(group))
+                    .filter(group => group.length > 0)
+                : this.autoMailDomainGroupsPreview;
+            return groups.reduce((map, group, index) => {
+                group.forEach(domain => {
+                    map[domain] = `[${index + 1}]`;
+                });
+                return map;
+            }, {});
+        },
+        sortedMailDomainRuntimeStats() {
+            if (!this.config || !this.config.enable_mail_domain_grouping) {
+                return this.mailDomainRuntimeStats;
+            }
+            const groups = this.config.mail_domain_group_mode === 'manual'
+                ? this.config.mail_domain_groups
+                    .map(group => normalizeMailDomainCsv(group))
+                    .filter(group => group.length > 0)
+                : this.autoMailDomainGroupsPreview;
+            const orderMap = groups.reduce((map, group, groupIndex) => {
+                group.forEach((domain, domainIndex) => {
+                    map[domain] = { groupIndex, domainIndex };
+                });
+                return map;
+            }, {});
+            return [...this.mailDomainRuntimeStats].sort((a, b) => {
+                const left = orderMap[a?.domain] || { groupIndex: Number.MAX_SAFE_INTEGER, domainIndex: Number.MAX_SAFE_INTEGER };
+                const right = orderMap[b?.domain] || { groupIndex: Number.MAX_SAFE_INTEGER, domainIndex: Number.MAX_SAFE_INTEGER };
+                if (left.groupIndex !== right.groupIndex) return left.groupIndex - right.groupIndex;
+                if (left.domainIndex !== right.domainIndex) return left.domainIndex - right.domainIndex;
+                return String(a?.domain || '').localeCompare(String(b?.domain || ''));
+            });
         }
     },
     methods: {
+        t(text) {
+            return translateText(text, this.currentLanguage);
+        },
+        targetLanguageLabel() {
+            return this.currentLanguage === TRADITIONAL_LANGUAGE ? '简体中文' : '繁體中文';
+        },
+        resolveClashSubscriptionUrl(rawUrl) {
+            const text = String(rawUrl || '').trim();
+            if (!text) return '';
+            if (/^https?:\/\//i.test(text)) return text;
+            if (text.startsWith('//')) return `${window.location.protocol}${text}`;
+            const base = window.location.origin.replace(/\/+$/, '');
+            if (text.startsWith('/')) return `${base}${text}`;
+            return `${base}/${text.replace(/^\.?\//, '')}`;
+        },
+        isMobileViewport() {
+            return typeof window !== 'undefined' && window.innerWidth < 768;
+        },
+        toggleMobileNav(forceState = null) {
+            const nextState = typeof forceState === 'boolean' ? forceState : !this.mobileNavOpen;
+            this.mobileNavOpen = nextState;
+            if (typeof document !== 'undefined') {
+                document.body.classList.toggle('overflow-hidden', nextState && this.isMobileViewport());
+            }
+        },
+        formatClashSubscriptionLabel(subscription) {
+            if (!subscription) return '未命名订阅';
+            const name = String(subscription.name || '').trim();
+            if (name && name !== '当前订阅') return name;
+            const source = String(subscription.url || subscription.raw_url || '').trim();
+            try {
+                const parsed = new URL(source);
+                const target = parsed.searchParams.get('url');
+                if (target) {
+                    const targetUrl = new URL(target);
+                    const lastSeg = targetUrl.pathname.split('/').filter(Boolean).pop();
+                    return `${targetUrl.hostname}${lastSeg ? ' / ' + lastSeg : ''}`;
+                }
+                const lastSeg = parsed.pathname.split('/').filter(Boolean).pop();
+                return `${parsed.hostname}${lastSeg ? ' / ' + lastSeg : ''}`;
+            } catch (_) {
+                return name || '未命名订阅';
+            }
+        },
+        toggleLanguage() {
+            const nextLanguage = this.currentLanguage === TRADITIONAL_LANGUAGE ? DEFAULT_LANGUAGE : TRADITIONAL_LANGUAGE;
+            this.setLanguage(nextLanguage);
+            this.showToast(nextLanguage === TRADITIONAL_LANGUAGE ? '已切换为繁体中文' : '已切换为简体中文', 'info');
+        },
+        setLanguage(language) {
+            this.currentLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : DEFAULT_LANGUAGE;
+            this.applyLanguage();
+        },
+        applyLanguage(translateDom = true) {
+            APP_LOCALE = this.currentLanguage;
+            localStorage.setItem(LANGUAGE_STORAGE_KEY, this.currentLanguage);
+            document.title = this.t('Wenfxl 注册管理系统');
+            if (translateDom) {
+                this.$nextTick(() => this.applyLanguageToDom());
+            }
+        },
+        applyLanguageToDom(root = document.body) {
+            if (!root) return;
+            const ignoredTags = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE']);
+            const translateNodeText = (node) => {
+                if (!node.nodeValue || !node.nodeValue.trim()) return;
+                if (!I18N_ORIGINAL_TEXT_NODES.has(node)) {
+                    I18N_ORIGINAL_TEXT_NODES.set(node, node.nodeValue);
+                }
+                const sourceText = I18N_ORIGINAL_TEXT_NODES.get(node);
+                node.nodeValue = translateText(sourceText, this.currentLanguage);
+            };
+            const translateAttributes = (element) => {
+                ['placeholder', 'title', 'aria-label', 'alt'].forEach((attr) => {
+                    const value = element.getAttribute(attr);
+                    if (!value) return;
+                    let originalAttrs = I18N_ORIGINAL_ATTRS.get(element);
+                    if (!originalAttrs) {
+                        originalAttrs = {};
+                        I18N_ORIGINAL_ATTRS.set(element, originalAttrs);
+                    }
+                    if (!Object.prototype.hasOwnProperty.call(originalAttrs, attr)) {
+                        originalAttrs[attr] = value;
+                    }
+                    const translatedValue = translateText(originalAttrs[attr], this.currentLanguage);
+                    if (value !== translatedValue) {
+                        element.setAttribute(attr, translatedValue);
+                    }
+                });
+            };
+
+            if (root.nodeType === Node.TEXT_NODE) {
+                translateNodeText(root);
+                return;
+            }
+            if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return;
+            if (root.nodeType === Node.ELEMENT_NODE) {
+                if (ignoredTags.has(root.tagName)) return;
+                translateAttributes(root);
+            }
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+                acceptNode(node) {
+                    const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+                    if (parent && ignoredTags.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            });
+            const nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach((node) => {
+                if (node.nodeType === Node.TEXT_NODE) translateNodeText(node);
+                if (node.nodeType === Node.ELEMENT_NODE) translateAttributes(node);
+            });
+        },
+        startLanguageObserver() {
+            if (this.languageObserver) this.languageObserver.disconnect();
+            this.languageObserver = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        if (this.currentLanguage === TRADITIONAL_LANGUAGE) {
+                            mutation.addedNodes.forEach((node) => this.applyLanguageToDom(node));
+                        }
+                    }
+                    else if (mutation.type === 'attributes') {
+                        if (this.currentLanguage === TRADITIONAL_LANGUAGE) {
+                            this.applyLanguageToDom(mutation.target);
+                        }
+                    }
+                    else if (mutation.type === 'characterData') {
+                        const node = mutation.target;
+                        const currentText = node.nodeValue;
+                        if (!currentText || !currentText.trim()) return;
+
+                        const originalText = I18N_ORIGINAL_TEXT_NODES.get(node);
+                        const expectedTranslation = translateText(originalText, this.currentLanguage);
+                        if (currentText === expectedTranslation) return;
+                        I18N_ORIGINAL_TEXT_NODES.set(node, currentText);
+                        if (this.currentLanguage === TRADITIONAL_LANGUAGE) {
+                            this.applyLanguageToDom(node);
+                        }
+                    }
+                });
+            });
+            this.languageObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                characterData: true,
+                attributeFilter: ['placeholder', 'title', 'aria-label', 'alt']
+            });
+        },
         applyTheme() {
             const nextMode = this.isDarkMode ? 'dark' : 'light';
             document.body.classList.toggle('theme-dark', this.isDarkMode);
@@ -266,15 +908,18 @@ createApp({
             this.applyTheme();
             this.showToast(this.isDarkMode ? '已切换为护眼模式' : '已切换为日间模式', 'info');
         },
+        isDefaultClusterSecret(secret) {
+            return ['','wenfxl666'].includes(String(secret || '').trim());
+        },
         showToast(message, type = 'info') {
             const id = this.toastId++;
-            this.toasts.push({ id, message, type });
+            this.toasts.push({ id, message: this.t(message), type });
             setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3500);
         },
 
         async customConfirm(message) {
             return new Promise((resolve) => {
-                this.confirmModal = { show: true, message, resolve };
+                this.confirmModal = { show: true, message: this.t(message), resolve };
             });
         },
         handleConfirm(result) {
@@ -299,6 +944,215 @@ createApp({
             return res;
         },
 
+        formatMemoryMb(value) {
+            if (value === null || value === undefined || value === '') return 'N/A';
+            const numeric = Number(value);
+            if (Number.isNaN(numeric)) return 'N/A';
+            return `${numeric.toFixed(1)} MB`;
+        },
+
+        formatMainlandDateTime(date, options = {}) {
+            return formatMainlandDateTime(date, options);
+        },
+
+        memorySafetyClass(level) {
+            const classes = {
+                ok: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                watch: 'bg-sky-50 text-sky-700 border-sky-200',
+                warning: 'bg-amber-50 text-amber-700 border-amber-200',
+                critical: 'bg-rose-50 text-rose-700 border-rose-200',
+                unknown: 'bg-slate-50 text-slate-600 border-slate-200'
+            };
+            return classes[level] || classes.unknown;
+        },
+
+        memoryRecommendationClass(level) {
+            const classes = {
+                ok: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                watch: 'bg-sky-50 text-sky-700 border-sky-200',
+                warning: 'bg-amber-50 text-amber-700 border-amber-200',
+                critical: 'bg-rose-50 text-rose-700 border-rose-200',
+                unknown: 'bg-slate-50 text-slate-600 border-slate-200'
+            };
+            return classes[level] || classes.unknown;
+        },
+
+        gitSyncStateClass(data) {
+            if (!data) return 'bg-slate-50 text-slate-600 border-slate-200';
+            if (!data.is_clean) return 'bg-amber-50 text-amber-700 border-amber-200';
+            if ((data.behind || 0) > 0) return 'bg-sky-50 text-sky-700 border-sky-200';
+            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        },
+
+        async fetchMemoryPrediction() {
+            if (!this.isLoggedIn) return;
+            this.isLoadingMemoryPrediction = true;
+            this.memoryPredictionError = '';
+            try {
+                const res = await this.authFetch('/api/system/memory_prediction');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.memoryPrediction = data;
+                } else {
+                    this.memoryPredictionError = data.message || '内存预测数据获取失败';
+                }
+            } catch (e) {
+                this.memoryPredictionError = '内存预测 API 请求失败';
+            } finally {
+                this.isLoadingMemoryPrediction = false;
+            }
+        },
+
+        async applyMemoryRecommendation() {
+            const suggested = this.memoryPrediction?.recommendation?.suggested_config;
+            if (!suggested || !this.config) {
+                this.showToast('当前没有可套用的建议配置', 'warning');
+                return;
+            }
+
+            this.config.enable_multi_thread_reg = !!suggested.enable_multi_thread_reg;
+            this.config.reg_threads = suggested.reg_threads ?? this.config.reg_threads;
+            if (!this.config.cpa_mode || typeof this.config.cpa_mode !== 'object') {
+                this.config.cpa_mode = {};
+            }
+            if (!this.config.sub2api_mode || typeof this.config.sub2api_mode !== 'object') {
+                this.config.sub2api_mode = {};
+            }
+            this.config.cpa_mode.threads = suggested.cpa_threads ?? this.config.cpa_mode.threads;
+            this.config.sub2api_mode.threads = suggested.sub2api_threads ?? this.config.sub2api_mode.threads;
+            this.config.max_log_lines = suggested.max_log_lines ?? this.config.max_log_lines;
+
+            this.showToast('已回填建议值，正在保存配置...', 'info');
+            await this.saveConfig();
+        },
+
+        async applyMemoryRecommendationAndRestart() {
+            const suggested = this.memoryPrediction?.recommendation?.suggested_config;
+            if (!suggested || !this.config) {
+                this.showToast('当前没有可套用的建议配置', 'warning');
+                return;
+            }
+            const confirmed = await this.customConfirm('确定要套用建议配置并立即重启项目吗？\n这适合服务器已经明显吃紧、需要尽快释放压力的场景。');
+            if (!confirmed) return;
+            await this.applyMemoryRecommendation();
+            await this.restartSystem();
+        },
+
+        async fetchCleanupStatus(showToast = false) {
+            if (!this.isLoggedIn) return;
+            this.cleanupMaintenance.loading = true;
+            this.cleanupMaintenance.error = '';
+            try {
+                const res = await this.authFetch('/api/system/cleanup_status');
+                const payload = await res.json();
+                if (payload.status === 'success' || payload.status === 'warning') {
+                    this.cleanupMaintenance.data = payload.data || null;
+                    if (payload.status === 'warning') {
+                        this.cleanupMaintenance.error = payload.message || '';
+                    } else if (showToast) {
+                        this.showToast(payload.message || '清理状态已刷新', 'success');
+                    }
+                } else {
+                    this.cleanupMaintenance.error = payload.message || '清理状态获取失败';
+                }
+            } catch (e) {
+                this.cleanupMaintenance.error = '清理状态请求失败';
+            } finally {
+                this.cleanupMaintenance.loading = false;
+            }
+        },
+
+        async runCleanup(force = false) {
+            const confirmed = await this.customConfirm(force ? '确定要强制执行磁盘 / 日志清理吗？\n即使磁盘占用还没到阈值，也会立刻清理日志、缓存和临时文件。' : '确定要执行磁盘 / 日志清理吗？');
+            if (!confirmed) return;
+            this.cleanupMaintenance.actionLoading = true;
+            this.cleanupMaintenance.error = '';
+            try {
+                const res = await this.authFetch('/api/system/run_cleanup', {
+                    method: 'POST',
+                    body: JSON.stringify({ force })
+                });
+                const payload = await res.json();
+                this.cleanupMaintenance.outputTail = payload?.data?.output_tail || [];
+                this.cleanupMaintenance.data = payload?.data?.status || this.cleanupMaintenance.data;
+                if (payload.status === 'success') {
+                    this.showToast(payload.message || '清理完成', 'success');
+                } else {
+                    this.cleanupMaintenance.error = payload.message || '清理失败';
+                    this.showToast(this.cleanupMaintenance.error, 'error');
+                }
+            } catch (e) {
+                this.cleanupMaintenance.error = '清理请求失败';
+                this.showToast(this.cleanupMaintenance.error, 'error');
+            } finally {
+                this.cleanupMaintenance.actionLoading = false;
+                await this.fetchCleanupStatus(false);
+            }
+        },
+
+        async fetchGitSyncStatus(showToast = false) {
+            if (!this.isLoggedIn) return;
+            this.gitSync.loading = true;
+            this.gitSync.error = '';
+            try {
+                const res = await this.authFetch('/api/system/git_status');
+                const payload = await res.json();
+                if (payload.status === 'success' || payload.status === 'warning') {
+                    this.gitSync.data = payload.data || null;
+                    this.gitSync.outputTail = [];
+                    if (payload.status === 'warning') {
+                        this.gitSync.error = payload.message || 'Git 状态读取失败';
+                    } else if (showToast) {
+                        this.showToast(payload.message || 'Git 状态已刷新', 'success');
+                    }
+                } else {
+                    this.gitSync.error = payload.message || 'Git 状态读取失败';
+                }
+            } catch (e) {
+                this.gitSync.error = 'Git 状态请求失败';
+            } finally {
+                this.gitSync.loading = false;
+            }
+        },
+
+        async runGitSyncAction(action) {
+            const isReset = action === 'reset_hard';
+            const confirmText = isReset
+                ? `⚠️ 危险操作：\n\n确定要强制覆盖本地代码并同步到远端跟踪分支吗？\n这会直接丢弃当前未提交改动。${this.gitSync.restartAfter ? '\n同步完成后会自动重启项目。' : ''}`
+                : '确定要抓取远端最新 Git 状态吗？';
+            const confirmed = await this.customConfirm(confirmText);
+            if (!confirmed) return;
+
+            this.gitSync.actionLoading = true;
+            this.gitSync.lastAction = action;
+            try {
+                const res = await this.authFetch('/api/system/git_update', {
+                    method: 'POST',
+                    body: JSON.stringify({ action, restart_after: isReset ? !!this.gitSync.restartAfter : false })
+                });
+                const payload = await res.json();
+                this.gitSync.outputTail = payload?.data?.output_tail || [];
+                    if (payload.status === 'success') {
+                        this.gitSync.data = payload?.data?.after || this.gitSync.data;
+                        this.showToast(payload.message || 'Git 操作完成', 'success');
+                        if (payload?.data?.restart_scheduled) {
+                        this.showToast('项目正在重启，页面将在 6 秒后自动刷新...', 'info');
+                        setTimeout(() => window.location.reload(), 6000);
+                        }
+                    } else {
+                    this.gitSync.data = payload?.data?.after || this.gitSync.data;
+                    this.gitSync.error = payload.message || 'Git 操作失败';
+                    this.showToast(this.gitSync.error, payload.status === 'warning' ? 'warning' : 'error');
+                }
+            } catch (e) {
+                this.gitSync.error = 'Git 操作请求失败';
+                this.showToast(this.gitSync.error, 'error');
+            } finally {
+                this.gitSync.actionLoading = false;
+                await this.fetchGitSyncStatus(false);
+            }
+        },
+
         async handleLogin() {
             if(!this.loginPassword) { this.showToast("请输入密码！", "warning"); return; }
             try {
@@ -310,7 +1164,7 @@ createApp({
                 const data = await res.json();
                 if (data.status === 'success') {
 					this.logs = [];
-                    localStorage.setItem('auth_token', data.token); 
+                    localStorage.setItem('auth_token', data.token);
                     this.isLoggedIn = true;
                     this.initApp();
                     this.showToast("登录成功，欢迎回来！", "success");
@@ -320,6 +1174,10 @@ createApp({
         logout() {
             localStorage.removeItem('auth_token');
             this.isLoggedIn = false;
+            this.mobileNavOpen = false;
+            if (typeof document !== 'undefined') {
+                document.body.classList.remove('overflow-hidden');
+            }
             this.loginPassword = '';
 			this.logs = [];
             Object.keys(this.showPwd).forEach(k => this.showPwd[k] = false);
@@ -331,25 +1189,72 @@ createApp({
         },
         async initApp() {
             await this.fetchConfig();
+            if (this.config?.enable_mail_domain_runtime_control) {
+                await this.fetchMailDomainRuntimeStats({ force: true });
+            } else {
+                this.mailDomainRuntimeStats = [];
+                this.mailDomainRuntimeStatsError = '';
+                this.mailDomainRuntimeLastFetchAt = 0;
+            }
             this.initSSE();
             this.fetchAccounts();
-            this.fetchCloudAccounts();
-            this.fetchMailboxes();
+            if (this.currentTab === 'cloud') {
+			    this.fetchCloudAccounts();
+			}
+            if (this.currentTab === 'mailboxes') {
+			    this.fetchMailboxes();
+			}
+            if (this.currentTab === 'team_accounts') {
+                this.fetchTeamAccounts();
+            }
             this.startStatsPolling();
             this.checkUpdate();
-            if (this.config && this.config.reg_mode === 'extension') {
-                this.listenToExtension();
+            this.fetchInventoryStats();
+
+            // if (this.config && this.config.reg_mode === 'extension') {
+            //     this.listenToExtension();
+            // }
+            if (this.currentTab === 'image_accounts') {
+                this.fetchImageAccounts();
+            }
+            if (this.currentTab === 'cluster') {
+                this.fetchClusterSyncTasks();
             }
             if (this.currentTab === 'proxy') {
                 this.fetchClashPool();
+            }
+            if (this.currentTab === 'concurrency') {
+                this.fetchMemoryPrediction();
+                this.fetchGitSyncStatus(false);
+                this.fetchCleanupStatus(false);
             }
         },
         startStatsPolling() {
             if(this.statsTimer) clearTimeout(this.statsTimer);
             this.pollStats();
         },
+        shouldPollMailDomainRuntimeStats() {
+            return !!(
+                this.currentTab === 'email' &&
+                this.isRunning &&
+                this.config?.enable_mail_domain_runtime_control &&
+                !this.mailDomainRuntimePanelCollapsed
+            );
+        },
+        queuePollStats() {
+            if (this._pollStatsInFlight) {
+                this._pollStatsQueued = true;
+                return;
+            }
+            this.pollStats();
+        },
         async pollStats() {
             if(!this.isLoggedIn) return;
+            if (this._pollStatsInFlight) {
+                this._pollStatsQueued = true;
+                return;
+            }
+            this._pollStatsInFlight = true;
             try {
                 const res = await this.authFetch('/api/stats');
                 const data = await res.json();
@@ -370,9 +1275,16 @@ createApp({
                             this.dispatchExtensionTask();
                         }
                     }
-                this.stats = data;
+                    this.stats = data;
                 } else {
                     this.isRunning = data.is_running;
+                }
+
+                if (
+                    this.shouldPollMailDomainRuntimeStats() &&
+                    Date.now() - this.mailDomainRuntimeLastFetchAt >= this.mailDomainRuntimePollIntervalMs
+                ) {
+                    await this.fetchMailDomainRuntimeStats({ silent: true });
                 }
 
                 if (this.currentTab === 'cluster') {
@@ -381,16 +1293,25 @@ createApp({
                     if (cData.status === 'success') {
                         this.clusterNodes = cData.nodes;
                     }
+                    await this.fetchClusterSyncTasks({ silent: true });
                 }
             } catch(e) {
 
             } finally {
+                this._pollStatsInFlight = false;
+                if (this._pollStatsQueued) {
+                    this._pollStatsQueued = false;
+                    this.queuePollStats();
+                    return;
+                }
                 this.statsTimer = setTimeout(() => {
-                    this.pollStats();
+                    this.queuePollStats();
                 }, 1000);
             }
         },
         async fetchConfig() {
+            this.isLoadingConfig = true;
+            this.configLoadError = '';
             try {
                 const res = await this.authFetch('/api/config');
                 this.config = await res.json();
@@ -425,6 +1346,7 @@ createApp({
                         this.config.smsbower.reuse_phone = normalizeBooleanLike(this.config.smsbower.reuse_phone, true);
                         this.config.smsbower.verify_on_register = normalizeBooleanLike(this.config.smsbower.verify_on_register, false);
                         if(this.config.smsbower.reuse_max === undefined) this.config.smsbower.reuse_max = 2;
+                        if(this.config.smsbower.use_proxy === undefined) this.config.smsbower.use_proxy = false;
                     }
 
                     if (!this.config.fivesim) {
@@ -435,11 +1357,13 @@ createApp({
                         };
                     } else {
                         if(this.config.fivesim.reuse_max === undefined) this.config.fivesim.reuse_max = 2;
+                        if(this.config.fivesim.use_proxy === undefined) this.config.fivesim.use_proxy = false;
                     }
 
                     if (this.config.hero_sms) {
                         this.config.hero_sms.enabled = normalizeBooleanLike(this.config.hero_sms.enabled, false);
                         if(this.config.hero_sms.reuse_max === undefined) this.config.hero_sms.reuse_max = 2;
+                        if(this.config.hero_sms.use_proxy === undefined) this.config.hero_sms.use_proxy = false;
                     }
                 }
 
@@ -465,6 +1389,29 @@ createApp({
                 if (this.config.sub2api_mode.default_proxy === undefined) {
                     this.config.sub2api_mode.default_proxy = '';
                 }
+                if (!this.config.image2api_mode) {
+                    this.config.image2api_mode = {
+                        enable: false,
+                        api_url: '',
+                        api_key: '',
+                        retain_reg_only: false,
+                        img_only_mode: false
+                    };
+                } else {
+                    if (this.config.image2api_mode.retain_reg_only === undefined) {
+                        this.config.image2api_mode.retain_reg_only = false;
+                    }
+                    if (this.config.image2api_mode.img_only_mode === undefined) {
+                        this.config.image2api_mode.img_only_mode = false;
+                    }
+                }
+                if (!this.config.team_mode) {
+                    this.config.team_mode = { enable: false, overspeed: false };
+                } else {
+                    if (this.config.team_mode.overspeed === undefined) {
+                        this.config.team_mode.overspeed = false;
+                    }
+                }
                 if (!this.config.fvia) {
                     this.config.fvia = { token: '' };
                 }
@@ -474,11 +1421,14 @@ createApp({
                 if (!this.config.max_log_lines) {
                     this.config.max_log_lines = 500;
                 }
+                let clusterUploadTimeout = parseInt(this.config.cluster_upload_timeout_sec, 10);
+                if (Number.isNaN(clusterUploadTimeout)) clusterUploadTimeout = 15;
+                this.config.cluster_upload_timeout_sec = Math.max(15, Math.min(3600, clusterUploadTimeout));
                 if (!this.config.temporam) {
                     this.config.temporam = { cookie: '' };
                 }
                 if (!this.config.reg_mode) {
-                        this.config.reg_mode = 'protocol';
+                        this.config.reg_mode = 'email';
                     }
                 if (!this.config.tg_bot.template_success) {
                     this.config.tg_bot.template_success = "🎉 <b>注册成功</b>\n⏰ 时间: <code>{time}</code>\n📧 账号: <code>{email}</code>\n🔑 密码: <code>{password}</code>";
@@ -548,7 +1498,275 @@ createApp({
                 if (this.config.cluster_node_name === undefined) this.config.cluster_node_name = '';
                 if (this.config.cluster_master_url === undefined) this.config.cluster_master_url = '';
                 if (this.config.cluster_secret === undefined) this.config.cluster_secret = 'wenfxl666';
-            } catch (e) {}
+                if (!Array.isArray(this.config.disabled_mail_domains)) this.config.disabled_mail_domains = [];
+                this.config.disabled_mail_domains = [...new Set(
+                    this.config.disabled_mail_domains
+                        .map(item => String(item || '').trim().toLowerCase().replace(/^\.+|\.+$/g, ''))
+                        .filter(Boolean)
+                )];
+                if (this.config.enable_mail_domain_runtime_control === undefined) this.config.enable_mail_domain_runtime_control = false;
+                this.config.enable_mail_domain_runtime_control = normalizeBooleanLike(this.config.enable_mail_domain_runtime_control, false);
+                if (this.config.enable_mail_domain_grouping === undefined) this.config.enable_mail_domain_grouping = false;
+                this.config.enable_mail_domain_grouping = normalizeBooleanLike(this.config.enable_mail_domain_grouping, false);
+                if (this.config.mail_domain_group_count === undefined) this.config.mail_domain_group_count = 2;
+                this.config.mail_domain_group_count = Math.min(10, Math.max(1, parseInt(this.config.mail_domain_group_count, 10) || 2));
+                if (this.config.mail_domain_group_mode === undefined) this.config.mail_domain_group_mode = 'auto';
+                this.config.mail_domain_group_mode = ['auto', 'manual'].includes(String(this.config.mail_domain_group_mode || '').trim().toLowerCase())
+                    ? String(this.config.mail_domain_group_mode || '').trim().toLowerCase()
+                    : 'auto';
+                if (this.config.mail_domain_group_strategy === undefined) this.config.mail_domain_group_strategy = 'round_robin';
+                this.config.mail_domain_group_strategy = ['round_robin', 'exhaust_then_next'].includes(String(this.config.mail_domain_group_strategy || '').trim().toLowerCase())
+                    ? String(this.config.mail_domain_group_strategy || '').trim().toLowerCase()
+                    : 'round_robin';
+                if (!Array.isArray(this.config.mail_domain_groups)) this.config.mail_domain_groups = [];
+                this.config.mail_domain_groups = this.config.mail_domain_groups
+                    .slice(0, this.config.mail_domain_group_count)
+                    .map(item => normalizeMailDomainCsv(item).join(','));
+                while (this.config.mail_domain_groups.length < this.config.mail_domain_group_count) {
+                    this.config.mail_domain_groups.push('');
+                }
+                if (this.config.mail_domain_pinpoint_burst_mode === undefined) this.config.mail_domain_pinpoint_burst_mode = false;
+                this.config.mail_domain_pinpoint_burst_mode = normalizeBooleanLike(this.config.mail_domain_pinpoint_burst_mode, false);
+                if (this.config.mail_domain_prefer_low_failure_mode === undefined) this.config.mail_domain_prefer_low_failure_mode = false;
+                this.config.mail_domain_prefer_low_failure_mode = normalizeBooleanLike(this.config.mail_domain_prefer_low_failure_mode, false);
+                if (this.config.mail_domain_pinpoint_burst_mode && this.config.mail_domain_prefer_low_failure_mode) {
+                    this.config.mail_domain_prefer_low_failure_mode = false;
+                }
+                this.applyMailDomainModeConstraints();
+                if (!Array.isArray(this.config.mail_domain_failure_types)) this.config.mail_domain_failure_types = ['discarded_email'];
+                this.config.mail_domain_failure_types = [...new Set(
+                    this.config.mail_domain_failure_types
+                        .map(item => String(item || '').trim().toLowerCase())
+                        .filter(Boolean)
+                )];
+                if (this.config.mail_domain_failure_types.length === 0) this.config.mail_domain_failure_types = ['discarded_email'];
+                if (this.config.mail_domain_fail_threshold === undefined) this.config.mail_domain_fail_threshold = 3;
+                if (this.config.mail_domain_fail_cooldown_sec === undefined) this.config.mail_domain_fail_cooldown_sec = 600;
+            } catch (e) {
+                this.configLoadError = e?.message === 'Unauthorized' ? '登录已失效，请重新登录' : '配置加载失败，请稍后重试';
+            } finally {
+                this.isLoadingConfig = false;
+            }
+        },
+        applyMailDomainModeExclusion(changedMode = '') {
+            this.applyMailDomainModeConstraints(changedMode);
+        },
+        applyMailDomainModeConstraints(changedMode = '') {
+            if (!this.config) return;
+            this.config.enable_mail_domain_grouping = normalizeBooleanLike(this.config.enable_mail_domain_grouping, false);
+            this.config.mail_domain_pinpoint_burst_mode = normalizeBooleanLike(this.config.mail_domain_pinpoint_burst_mode, false);
+            this.config.mail_domain_prefer_low_failure_mode = normalizeBooleanLike(this.config.mail_domain_prefer_low_failure_mode, false);
+            this.config.mail_domain_group_count = Math.min(10, Math.max(1, parseInt(this.config.mail_domain_group_count, 10) || 2));
+            this.config.mail_domain_group_mode = ['auto', 'manual'].includes(String(this.config.mail_domain_group_mode || '').trim().toLowerCase())
+                ? String(this.config.mail_domain_group_mode || '').trim().toLowerCase()
+                : 'auto';
+            this.config.mail_domain_group_strategy = ['round_robin', 'exhaust_then_next'].includes(String(this.config.mail_domain_group_strategy || '').trim().toLowerCase())
+                ? String(this.config.mail_domain_group_strategy || '').trim().toLowerCase()
+                : 'round_robin';
+            if (!Array.isArray(this.config.mail_domain_groups)) {
+                this.config.mail_domain_groups = [];
+            }
+            this.config.mail_domain_groups = this.config.mail_domain_groups
+                .slice(0, this.config.mail_domain_group_count)
+                .map(item => normalizeMailDomainCsv(item).join(','));
+            while (this.config.mail_domain_groups.length < this.config.mail_domain_group_count) {
+                this.config.mail_domain_groups.push('');
+            }
+            if (changedMode === 'grouping' && this.config.enable_mail_domain_grouping) {
+                this.config.mail_domain_pinpoint_burst_mode = false;
+            }
+            if (changedMode === 'pinpoint' && this.config.mail_domain_pinpoint_burst_mode) {
+                this.config.enable_mail_domain_grouping = false;
+            }
+            if (this.config.enable_mail_domain_grouping && this.config.mail_domain_pinpoint_burst_mode) {
+                if (changedMode === 'pinpoint') {
+                    this.config.enable_mail_domain_grouping = false;
+                } else {
+                    this.config.mail_domain_pinpoint_burst_mode = false;
+                }
+            }
+            if (this.config.mail_domain_pinpoint_burst_mode && this.config.mail_domain_prefer_low_failure_mode) {
+                if (changedMode === 'pinpoint') {
+                    this.config.mail_domain_prefer_low_failure_mode = false;
+                } else if (changedMode === 'low_failure') {
+                    this.config.mail_domain_pinpoint_burst_mode = false;
+                } else {
+                    this.config.mail_domain_prefer_low_failure_mode = false;
+                }
+            }
+        },
+        validateMailDomainGrouping() {
+            if (!this.config) return '';
+            this.applyMailDomainModeConstraints();
+            if (!this.config.enable_mail_domain_grouping) {
+                return '';
+            }
+            const masterDomains = normalizeMailDomainCsv(this.config.mail_domains);
+            if (masterDomains.length === 0) {
+                return '启用域名分组前请先填写 mail_domains';
+            }
+            const groupCount = Math.min(10, Math.max(1, parseInt(this.config.mail_domain_group_count, 10) || 0));
+            if (groupCount < 1 || groupCount > 10) {
+                return '分组数量必须在 1 到 10 之间';
+            }
+            if (groupCount > masterDomains.length) {
+                return '分组数量不能大于有效主域名数量';
+            }
+            if (this.config.mail_domain_group_mode !== 'manual') {
+                return '';
+            }
+            const masterSet = new Set(masterDomains);
+            const assigned = new Set();
+            for (let index = 0; index < groupCount; index += 1) {
+                const domains = normalizeMailDomainCsv(this.config.mail_domain_groups[index] || '');
+                if (domains.length === 0) {
+                    return `第 ${index + 1} 组至少需要填写一个域名`;
+                }
+                for (const domain of domains) {
+                    if (!masterSet.has(domain)) {
+                        return `第 ${index + 1} 组存在未配置在 mail_domains 中的域名: ${domain}`;
+                    }
+                    if (assigned.has(domain)) {
+                        return `域名 ${domain} 不能重复出现在多个分组中`;
+                    }
+                    assigned.add(domain);
+                }
+            }
+            const missing = masterDomains.filter(domain => !assigned.has(domain));
+            if (missing.length > 0) {
+                return `手动分组未覆盖所有主域名，缺少: ${missing.join(', ')}`;
+            }
+            return '';
+        },
+        normalizeMailDomainGroupInput(index) {
+            if (!this.config || !Array.isArray(this.config.mail_domain_groups)) return;
+            this.config.mail_domain_groups[index] = normalizeMailDomainCsv(this.config.mail_domain_groups[index]).join(',');
+        },
+        async fetchMailDomainRuntimeStats(options = {}) {
+            const { silent = false, force = false } = options;
+            if (!this.config?.enable_mail_domain_runtime_control) {
+                this.mailDomainRuntimeStats = [];
+                this.mailDomainRuntimeStatsError = '';
+                this.mailDomainRuntimeLastFetchAt = 0;
+                this.mailDomainRuntimeFetchPromise = null;
+                this.mailDomainRuntimeFetchQueued = false;
+                return;
+            }
+            if (!force && this.mailDomainRuntimeFetchPromise) {
+                this.mailDomainRuntimeFetchQueued = true;
+                return this.mailDomainRuntimeFetchPromise;
+            }
+            const request = (async () => {
+                try {
+                    const res = await this.authFetch('/api/config/mail_domain_runtime_stats');
+                    const data = await res.json();
+                    if (data.status === 'success' && Array.isArray(data.items)) {
+                        this.mailDomainRuntimeStats = data.items;
+                        this.mailDomainRuntimeStatsError = '';
+                        this.mailDomainRuntimeLastFetchAt = Date.now();
+                    } else {
+                        this.mailDomainRuntimeStatsError = data.message || '域名运行时状态获取失败';
+                        if (!silent) {
+                            this.showToast(this.mailDomainRuntimeStatsError, 'error');
+                        }
+                    }
+                } catch (e) {
+                    this.mailDomainRuntimeStatsError = '域名运行时状态获取失败，请检查后端接口或网络连接';
+                    if (!silent) {
+                        this.showToast(this.mailDomainRuntimeStatsError, 'error');
+                    }
+                } finally {
+                    this.mailDomainRuntimeFetchPromise = null;
+                    if (this.mailDomainRuntimeFetchQueued) {
+                        this.mailDomainRuntimeFetchQueued = false;
+                        this.fetchMailDomainRuntimeStats({ silent: true, force: true });
+                    }
+                }
+            })();
+            this.mailDomainRuntimeFetchPromise = request;
+            return request;
+        },
+        toggleMailDomainRuntimePanel() {
+            this.mailDomainRuntimePanelCollapsed = !this.mailDomainRuntimePanelCollapsed;
+            localStorage.setItem('mail_domain_runtime_panel_collapsed', this.mailDomainRuntimePanelCollapsed ? 'true' : 'false');
+            if (!this.mailDomainRuntimePanelCollapsed && this.config?.enable_mail_domain_runtime_control) {
+                this.fetchMailDomainRuntimeStats({ silent: true, force: true });
+            }
+        },
+        isMailDomainRuntimePristine(item) {
+            if (!item || typeof item !== 'object') return false;
+            return !item.last_used_at && !item.success_count && !item.fail_count && !(item.cooldown_remaining_sec > 0);
+        },
+        toggleMailDomainDisabled(domain) {
+            const normalized = String(domain || '').trim().toLowerCase().replace(/^\.+|\.+$/g, '');
+            if (!normalized) return;
+            if (!Array.isArray(this.config.disabled_mail_domains)) {
+                this.config.disabled_mail_domains = [];
+            }
+            const next = new Set(
+                this.config.disabled_mail_domains
+                    .map(item => String(item || '').trim().toLowerCase().replace(/^\.+|\.+$/g, ''))
+                    .filter(Boolean)
+            );
+            if (next.has(normalized)) {
+                next.delete(normalized);
+            } else {
+                next.add(normalized);
+            }
+            this.config.disabled_mail_domains = Array.from(next);
+            this.saveConfig();
+        },
+        async clearMailDomainRuntimeCooldowns() {
+            try {
+                const res = await this.authFetch('/api/config/mail_domain_runtime_stats/clear', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.mailDomainRuntimeStatsError = '';
+                    this.showToast(data.message || '已清除全部域名冷却', 'success');
+                    await this.fetchMailDomainRuntimeStats({ silent: true, force: true });
+                    this.queuePollStats();
+                } else {
+                    this.showToast(data.message || '清除全部域名冷却失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('清除全部域名冷却失败，请检查网络连接', 'error');
+            }
+        },
+        async clearMailDomainRuntimeRowCounters(domain) {
+            try {
+                const res = await this.authFetch('/api/config/mail_domain_runtime_stats/clear_counters', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message || '已清除域名异常', 'success');
+                    await this.fetchMailDomainRuntimeStats({ silent: true, force: true });
+                    this.queuePollStats();
+                } else {
+                    this.showToast(data.message || '清除域名异常失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('清除域名异常失败，请检查网络连接', 'error');
+            }
+        },
+        async clearMailDomainRuntimeRowCooldown(domain) {
+            try {
+                const res = await this.authFetch('/api/config/mail_domain_runtime_stats/clear_cooldown', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message || '已清除域名冷却', 'success');
+                    await this.fetchMailDomainRuntimeStats({ silent: true, force: true });
+                    this.queuePollStats();
+                } else {
+                    this.showToast(data.message || '清除域名冷却失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('清除域名冷却失败，请检查网络连接', 'error');
+            }
         },
         async saveConfig() {
             try {
@@ -578,6 +1796,47 @@ createApp({
                     this.config.local_microsoft.suffix_len_min = minLen;
                     this.config.local_microsoft.suffix_len_max = maxLen;
                 }
+                this.config.enable_mail_domain_runtime_control = normalizeBooleanLike(this.config.enable_mail_domain_runtime_control, false);
+                this.config.enable_mail_domain_grouping = normalizeBooleanLike(this.config.enable_mail_domain_grouping, false);
+                if (this.config.mail_domain_pinpoint_burst_mode === undefined) this.config.mail_domain_pinpoint_burst_mode = false;
+                this.config.mail_domain_pinpoint_burst_mode = normalizeBooleanLike(this.config.mail_domain_pinpoint_burst_mode, false);
+                if (this.config.mail_domain_prefer_low_failure_mode === undefined) this.config.mail_domain_prefer_low_failure_mode = false;
+                this.config.mail_domain_prefer_low_failure_mode = normalizeBooleanLike(this.config.mail_domain_prefer_low_failure_mode, false);
+                this.applyMailDomainModeConstraints();
+                const mailDomainGroupingError = this.validateMailDomainGrouping();
+                if (mailDomainGroupingError) {
+                    this.showToast(mailDomainGroupingError, 'warning');
+                    return;
+                }
+                if (!Array.isArray(this.config.mail_domain_failure_types)) {
+                    this.config.mail_domain_failure_types = ['discarded_email'];
+                }
+                this.config.mail_domain_failure_types = [...new Set(
+                    this.config.mail_domain_failure_types
+                        .map(item => String(item || '').trim().toLowerCase())
+                        .filter(Boolean)
+                )];
+                if (this.config.mail_domain_failure_types.length === 0) {
+                    this.config.mail_domain_failure_types = ['discarded_email'];
+                }
+                if (!this.config.enable_mail_domain_runtime_control) {
+                    this.mailDomainRuntimeStats = [];
+                    this.mailDomainRuntimeStatsError = '';
+                    this.mailDomainRuntimeLastFetchAt = 0;
+                }
+                if (!Array.isArray(this.config.disabled_mail_domains)) {
+                    this.config.disabled_mail_domains = [];
+                }
+                this.config.disabled_mail_domains = [...new Set(
+                    this.config.disabled_mail_domains
+                        .map(item => String(item || '').trim().toLowerCase().replace(/^\.+|\.+$/g, ''))
+                        .filter(Boolean)
+                )];
+                this.config.mail_domain_fail_threshold = Math.max(0, parseInt(this.config.mail_domain_fail_threshold, 10) || 0);
+                this.config.mail_domain_fail_cooldown_sec = Math.max(0, parseInt(this.config.mail_domain_fail_cooldown_sec, 10) || 0);
+                let clusterUploadTimeout = parseInt(this.config.cluster_upload_timeout_sec, 10);
+                if (Number.isNaN(clusterUploadTimeout)) clusterUploadTimeout = 15;
+                this.config.cluster_upload_timeout_sec = Math.max(15, Math.min(3600, clusterUploadTimeout));
                 this.config.warp_proxy_list = this.warpListStr.split('\n').map(s => s.trim()).filter(s => s);
                 if (!this.config.raw_proxy_pool || typeof this.config.raw_proxy_pool !== 'object' || Array.isArray(this.config.raw_proxy_pool)) {
                     this.config.raw_proxy_pool = { enable: false, proxy_list: [] };
@@ -590,9 +1849,30 @@ createApp({
                 const data = await res.json();
                 if(data.status === 'success') {
                     this.showToast(data.message, "success");
-                    this.pollStats();
+                    await this.fetchConfig();
+                    await this.fetchMailDomainRuntimeStats({ force: true });
+                    this.queuePollStats();
                 } else { this.showToast("保存失败：" + data.message, "error"); }
             } catch (e) { this.showToast("保存失败网络异常", "error"); }
+        },
+        filterLocalAccounts(status) {
+            this.accountStatusFilter = status;
+            this.currentPage = 1;
+            this.fetchAccounts();
+
+            const statusMap = {
+                'all': '全部',
+                'unpushed': '未推送',
+                'pushed': '已推送',
+                'credential': '有凭证',
+                'image2api': 'Img凭证',
+                'active': '活跃',
+                'disabled': '已禁用',
+                'with_token': '完整凭证',
+                'reg_only': '半成品号',
+                'imgsub2api': 'ImgSub2API'
+            };
+            this.showToast(`已筛选: ${statusMap[status]}的本地账号`, 'info');
         },
 		async fetchAccounts(isManual = false) {
             if (isManual) {
@@ -606,6 +1886,9 @@ createApp({
                 if (this.searchAccounts) {
                     url += `&search=${encodeURIComponent(this.searchAccounts)}`;
                 }
+                if (this.accountStatusFilter && this.accountStatusFilter !== 'all') {
+                    url += `&status_filter=${this.accountStatusFilter}`;
+                }
                 const res = await this.authFetch(url);
                 const data = await res.json();
                 if(data.status === 'success') {
@@ -615,8 +1898,8 @@ createApp({
                     } else {
                         this.totalAccounts = this.accounts.length;
                     }
-                    
-                    this.selectedAccounts = []; 
+
+                    this.selectedAccounts = [];
                     if (isManual) this.showToast("账号列表已刷新！", "success");
                 }
             } catch (e) {
@@ -631,28 +1914,32 @@ createApp({
                 return;
             }
             this.currentPage = newPage;
-            this.selectedAccounts = []; 
+            this.selectedAccounts = [];
             this.fetchAccounts(false);
         },
 		changePageSize() {
             this.currentPage = 1;
-            
-            this.selectedAccounts = []; 
-            
+
+            this.selectedAccounts = [];
+
             this.fetchAccounts(false);
         },
         switchTab(tabId) {
             if (!this.isLoggedIn) return;
             this.currentTab = tabId;
+            if (this.isMobileViewport()) {
+                this.toggleMobileNav(false);
+            }
             window.location.hash = tabId;
 			if (tabId === 'console') {
-				this.pollStats(); 
+				this.queuePollStats();
 			}
             if (tabId === 'accounts') {
                 this.fetchAccounts();
             }
 			if (tabId === 'email') {
 				this.fetchConfig();
+                    this.fetchMailDomainRuntimeStats({ force: true });
 			}
 			if (tabId === 'cloud') {
 			    this.fetchCloudAccounts();
@@ -668,6 +1955,17 @@ createApp({
             if (tabId === 'proxy') {
                 this.fetchClashPool();
             }
+            if (tabId === 'concurrency') {
+                this.fetchMemoryPrediction();
+                this.fetchGitSyncStatus(false);
+                this.fetchCleanupStatus(false);
+            }
+            if (tabId === 'team_accounts') {
+                this.fetchTeamAccounts();
+            }
+            if (tabId === 'image_accounts') {
+                this.fetchImageAccounts();
+            }
         },
         async exportSelectedAccounts() {
             if (this.selectedAccounts.length === 0) {
@@ -675,7 +1973,7 @@ createApp({
                 return;
             }
 
-            const emails = this.selectedAccounts.map(acc => acc.email);
+            const emails = this.selectedAccounts;
 
             try {
                 const res = await this.authFetch('/api/accounts/export_selected', {
@@ -749,11 +2047,11 @@ createApp({
 		maskEmail(email) {
             if (!email) return '';
             const parts = email.split('@');
-            if (parts.length !== 2) return '******'; 
-            
+            if (parts.length !== 2) return '******';
+
             const name = parts[0];
             const maskedDomain = '***.***';
-            
+
             if (name.length <= 3) {
                 return name + '***@' + maskedDomain;
             }
@@ -762,18 +2060,17 @@ createApp({
 		exportAccountsToTxt() {
 			if (this.selectedAccounts.length === 0) return;
 
-			const textContent = this.selectedAccounts
-				.map(acc => `${acc.email}----${acc.password}`)
-				.join('\n');
+			const selectedObjs = this.accounts.filter(acc => this.selectedAccounts.includes(acc.email));
+            const textContent = selectedObjs.map(acc => `${acc.email}----${acc.password}`).join('\n');
 
 			const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = url;
-			
+
 			const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 			link.download = `accounts_login_${dateStr}.txt`;
-			
+
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
@@ -788,19 +2085,20 @@ createApp({
             if (!confirmed) return;
 			this.isDeletingAccounts = true;
             try {
-                const emailsToDelete = this.selectedAccounts.map(acc => acc.email);
-                
+                const emailsToDelete = this.selectedAccounts;
+
                 const res = await this.authFetch('/api/accounts/delete', {
                     method: 'POST',
                     body: JSON.stringify({ emails: emailsToDelete })
                 });
-                
+
                 const data = await res.json();
-                
+
                 if (data.status === 'success') {
                     this.showToast(`成功物理删除 ${emailsToDelete.length} 个账号`, 'success');
                     this.selectedAccounts = [];
                     this.fetchAccounts();
+                    this.fetchInventoryStats();
                 } else {
                     this.showToast('删除失败: ' + data.message, 'error');
                 }
@@ -813,6 +2111,13 @@ createApp({
         toggleAll(event) {
             if (event.target.checked) this.selectedAccounts = [...this.filteredAccounts];
             else this.selectedAccounts = [];
+        },
+        toggleAllCloud(e) {
+            if (e.target.checked) {
+                this.selectedCloud = this.filteredCloud.map(a => String(a.id) + '|' + a.account_type);
+            } else {
+                this.selectedCloud = [];
+            }
         },
         toggleHideRegisterOnlyAccounts() {
             this.hideRegisterOnlyAccounts = !this.hideRegisterOnlyAccounts;
@@ -840,12 +2145,25 @@ createApp({
                     if (this.config?.reg_mode === 'extension') {
                         this.showToast("📡 正在探测节点在线状态...", "info");
                         try {
-                            const localId = localStorage.getItem('local_worker_id') || 'Node-Pilot-01';
+                            const localId = localStorage.getItem('local_worker_id');
+                            if (!localId) {
+                                const now = new Date();
+            const timeStr = formatMainlandTime(now);
+                                this.showToast("🚫 启动失败：未检测到插件节点身份，请先刷新插件连接", "error");
+                                this.logs.push({
+                                    parsed: true,
+                                    time: timeStr,
+                                    level: '系统',
+                                    text: '🛑 未检测到有效插件节点身份，请确认插件已连接并刷新页面后重试。',
+                                    raw: `[${timeStr}] [系统] 🛑 未检测到有效插件节点身份，请确认插件已连接并刷新页面后重试。`
+                                });
+                                return;
+                            }
                             const checkRes = await this.authFetch(`/api/ext/check_node?worker_id=${localId}`);
                             const checkData = await checkRes.json();
                             if (!checkData.online) {
                                 const now = new Date();
-                                const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            const timeStr = formatMainlandTime(now);
                                 this.showToast(`🚫 启动失败：节点 [${localId}] 未连接或已掉线！`, "error");
                                 this.logs.push({
                                     parsed: true,
@@ -888,7 +2206,8 @@ createApp({
                 if (data.status === 'success') {
                     this.isRunning = true;
                     this.currentTab = 'console';
-                    this.pollStats();
+                    this.queuePollStats();
+                    await this.fetchMailDomainRuntimeStats({ force: true });
                     this.showToast(`启动成功`, "success");
                 } else { this.showToast(data.message, "error"); }
             } catch (e) { this.showToast("启动请求发送失败", "error"); }
@@ -899,8 +2218,9 @@ createApp({
                 const data = await res.json();
                 this.showToast("任务已停止", "info");
                 this.isRunning = false;
+                await this.fetchMailDomainRuntimeStats({ force: true });
                 const now = new Date();
-                const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false }); // 获取如 14:30:05 格式
+            const timeStr = formatMainlandTime(now); // 获取如 14:30:05 格式
                 this.logs.push({
                     parsed: true,
                     time: timeStr,
@@ -915,54 +2235,145 @@ createApp({
                         container.scrollTop = container.scrollHeight;
                     }
                 });
-                this.pollStats();
+                this.queuePollStats();
             } catch (e) {
                 this.showToast("停止请求发送失败", "error");
             }
         },
         async bulkPushCPA() {
             if (!this.config.cpa_mode.enable) {
-                this.showToast("🚫 请先开启 CPA 巡检并填写 API", "warning"); return;
+              this.showToast("🚫 请先开启 CPA 巡检并填写 API", "warning"); return;
             }
             if (this.selectedAccounts.length === 0) return;
-            const confirmed = await this.customConfirm(`确定推送到 CPA？`);
-            if (!confirmed) return;
-            this.currentTab = 'console';
-            for (let i = 0; i < this.selectedAccounts.length; i++) {
-                const acc = this.selectedAccounts[i];
-                try {
-                    await this.authFetch('/api/account/action', {
-                        method: 'POST', body: JSON.stringify({ email: acc.email, action: 'push' })
-                    });
-                } catch (e) {}
-                await new Promise(r => setTimeout(r, 500));
+            const selectedObjs = this.accounts.filter(acc => this.selectedAccounts.includes(acc.email));
+            const targetAccounts = selectedObjs.filter(acc => !acc.push_platform || !acc.push_platform.toUpperCase().includes('CPA'));
+
+            if (targetAccounts.length === 0) {
+                this.showToast("⚠️ 选中的账号都已推送过 CPA，无需重复推送！", "warning");
+                return;
             }
-            this.showToast(`批量推送完毕！`, "success");
-            this.selectedAccounts = []; 
+            const skippedCount = this.selectedAccounts.length - targetAccounts.length;
+            const extraMsg = skippedCount > 0 ? `\n(已自动帮您过滤跳过 ${skippedCount} 个重复账号)` : '';
+
+            const confirmed = await this.customConfirm(`确定将 ${targetAccounts.length} 个新账号推送到 CPA？${extraMsg}`);
+            if (!confirmed) return;
+
+            this.currentTab = 'console';
+            const emailList = targetAccounts.map(acc => acc.email);
+
+            try {
+              const res = await this.authFetch('/api/account/action', {
+                  method: 'POST',
+                  body: JSON.stringify({ emails: emailList, action: 'push' })
+              });
+                const result = await res.json();
+                this.showToast(result.message, result.status);
+            } catch (e) {
+                this.showToast("批量推送请求异常", "error");
+            } finally {
+                this.selectedAccounts = [];
+                if (typeof this.fetchAccounts === 'function') this.fetchAccounts();
+                if (typeof this.fetchInventoryStats === 'function') this.fetchInventoryStats();
+            }
         },
-		async bulkPushSub2API() {
+        async bulkPushSub2API() {
             if (!this.config.sub2api_mode.enable) {
                 this.showToast("🚫 请先开启 Sub2API 模式并填写参数", "warning"); return;
             }
             if (this.selectedAccounts.length === 0) return;
-            const confirmed = await this.customConfirm(`确定推送到 Sub2API？`);
-            if (!confirmed) return;
-            this.currentTab = 'console';
-            for (let i = 0; i < this.selectedAccounts.length; i++) {
-                const acc = this.selectedAccounts[i];
-                try {
-                    await this.authFetch('/api/account/action', {
-                        method: 'POST', body: JSON.stringify({ email: acc.email, action: 'push_sub2api' })
-                    });
-                } catch (e) {}
-                await new Promise(r => setTimeout(r, 500));
+            const selectedObjs = this.accounts.filter(acc => this.selectedAccounts.includes(acc.email));
+            const targetAccounts = selectedObjs.filter(acc => !acc.push_platform || !acc.push_platform.toUpperCase().includes('SUB2API'));
+
+            if (targetAccounts.length === 0) {
+                this.showToast("⚠️ 选中的账号都已推送过 Sub2API，无需重复推送！", "warning");
+                return;
             }
-            this.showToast(`批量推送完毕！`, "success");
-            this.selectedAccounts = []; 
+
+            const skippedCount = this.selectedAccounts.length - targetAccounts.length;
+            const extraMsg = skippedCount > 0 ? `\n(已自动帮您过滤跳过 ${skippedCount} 个重复账号)` : '';
+
+            const confirmed = await this.customConfirm(`确定将 ${targetAccounts.length} 个新账号推送到 Sub2API？${extraMsg}`);
+            if (!confirmed) return;
+
+            this.currentTab = 'console';
+            const emailList = targetAccounts.map(acc => acc.email);
+
+            try {
+                const res = await this.authFetch('/api/account/action', {
+                    method: 'POST',
+                    body: JSON.stringify({ emails: emailList, action: 'push_sub2api' })
+                });
+                const result = await res.json();
+                this.showToast(result.message, result.status);
+            } catch (e) {
+                this.showToast("批量推送请求异常", "error");
+            } finally {
+                this.selectedAccounts = [];
+                if (typeof this.fetchAccounts === 'function') this.fetchAccounts();
+                if (typeof this.fetchInventoryStats === 'function') this.fetchInventoryStats();
+            }
+        },
+        async bulkPushImage2API() {
+            if (!this.config.image2api_mode || !this.config.image2api_mode.enable) {
+                this.showToast("🚫 请先开启 Image2API 模式并填写参数", "warning"); return;
+            }
+            if (this.selectedAccounts.length === 0) return;
+            const selectedObjs = this.accounts.filter(acc => this.selectedAccounts.includes(acc.email));
+            const targetAccounts = selectedObjs.filter(acc => !acc.push_platform || !acc.push_platform.toUpperCase().includes('IMAGE2API'));
+
+            if (targetAccounts.length === 0) {
+                this.showToast("⚠️ 选中的账号都已推送过 Image2API，无需重复推送！", "warning");
+                return;
+            }
+
+            const skippedCount = this.selectedAccounts.length - targetAccounts.length;
+            const extraMsg = skippedCount > 0 ? `\n(已自动帮您过滤跳过 ${skippedCount} 个重复账号)` : '';
+
+            const confirmed = await this.customConfirm(`确定将 ${targetAccounts.length} 个新账号推送到 Image2API？${extraMsg}`);
+            if (!confirmed) return;
+
+            this.currentTab = 'console';
+            const emailList = targetAccounts.map(acc => acc.email);
+
+            try {
+                const res = await this.authFetch('/api/account/action', {
+                    method: 'POST',
+                    body: JSON.stringify({ emails: emailList, action: 'push_image2api' })
+                });
+                const result = await res.json();
+                this.showToast(result.message, result.status);
+            } catch (e) {
+                this.showToast("批量推送请求异常", "error");
+            } finally {
+                this.selectedAccounts = [];
+                if (typeof this.fetchAccounts === 'function') this.fetchAccounts();
+                if (typeof this.fetchInventoryStats === 'function') this.fetchInventoryStats();
+            }
         },
         async triggerAccountAction(account, action) {
-            if (action === 'push' && !this.config.cpa_mode.enable) {
-                this.showToast("🚫 无法推送：请先配置 CPA 参数！", "warning"); return;
+            if (action === 'push') {
+                if (!this.config.cpa_mode.enable) {
+                    this.showToast("🚫 无法推送：请先配置 CPA 参数！", "warning"); return;
+                }
+                if (account.push_platform && account.push_platform.toUpperCase().includes('CPA')) {
+                    this.showToast("⚠️ 该账号已在 CPA 平台，无需重复推送！", "warning"); return;
+                }
+            }
+            if (action === 'push_sub2api') {
+                if (!this.config.sub2api_mode.enable) {
+                    this.showToast("🚫 无法推送：请先配置 Sub2API 参数！", "warning"); return;
+                }
+                if (account.push_platform && account.push_platform.toUpperCase().includes('SUB2API')) {
+                    this.showToast("⚠️ 该账号已在 Sub2API 平台，无需重复推送！", "warning"); return;
+                }
+            }
+            if (action === 'push_image2api') {
+                if (!this.config.image2api_mode || !this.config.image2api_mode.enable) {
+                    this.showToast("🚫 无法推送：请先配置 Image2API 参数！", "warning"); return;
+                }
+                if (account.push_platform && account.push_platform.toUpperCase().includes('IMAGE2API')) {
+                    this.showToast("⚠️ 该账号已在 Image2API 平台，无需重复推送！", "warning"); return;
+                }
             }
             this.currentTab = 'console';
             try {
@@ -971,10 +2382,29 @@ createApp({
                 });
                 const result = await res.json();
                 this.showToast(result.message, result.status);
-            } catch (e) {}
+                if (action === 'push' || action === 'push_sub2api' || action === 'push_image2api') {
+                    if (typeof this.fetchAccounts === 'function') this.fetchAccounts();
+                    if (typeof this.fetchInventoryStats === 'function') this.fetchInventoryStats();
+                }
+            } catch (e) {
+                this.showToast("请求异常", "error");
+            }
+        },
+        async fetchInventoryStats() {
+            try {
+                const res = await this.authFetch('/api/accounts/stats');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    this.inventoryStats.local = json.data.local;
+                } else {
+                    console.error("获取统计数据失败:", json.message);
+                }
+            } catch (e) {
+                console.error('获取统计面板异常', e);
+            }
         },
         async clearLogs() {
-            this.logs = []; 
+            this.logs = [];
             try { await this.authFetch('/api/logs/clear', { method: 'POST' }); } catch (e) {}
         },
 		initSSE() {
@@ -1065,7 +2495,7 @@ createApp({
 		},
 		// async executeGenerateDomainsOnly() {
 			// if (!this.config.mail_domains) return this.showToast('请先填写上方的主发信域名池！', 'warning');
-			
+
 			// const level = this.config.sub_domain_level || 1;
 
 			// try {
@@ -1095,7 +2525,7 @@ createApp({
 		async executeSyncToCF() {
 			const rawList = this.config.mail_domains || '';
 			const subDomains = rawList.split(',').map(d => d.trim()).filter(d => d);
-			
+
 			if (subDomains.length === 0) return this.showToast('当前没有可解析的主域，请先填写！', 'warning');
 			if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 API Key！', 'warning');
 			const confirmed = await this.customConfirm(`把 ${subDomains.length} 个主域名解析到 Cloudflare，确定继续吗？`);
@@ -1113,7 +2543,7 @@ createApp({
 						api_key: this.config.cf_api_key
 					})
 				});
-				
+
 				const data = await res.json();
 				if (data.status === 'success') {
 					this.showToast('✅ 解析成功...', 'success');
@@ -1123,7 +2553,7 @@ createApp({
 			} catch (e) {
 				this.showToast('解析接口请求异常', 'error');
 			} finally {
-				this.isLoadingSync = false; 
+				this.isLoadingSync = false;
 			}
 		},
 		// async checkCfGlobalStatus() {
@@ -1133,10 +2563,10 @@ createApp({
 				// const res = await this.authFetch(`/api/config/cf_global_status?main_domain=${encodeURIComponent(domains)}`);
 				// const data = await res.json();
 				// if (data.status === 'success') {
-					// this.cfGlobalStatusList = data.data; 
+					// this.cfGlobalStatusList = data.data;
 					// const allEnabled = data.data.length > 0 && data.data.every(item => item.is_enabled);
 					// if (allEnabled && this.cfStatusTimer) {
-						// this.stopCfStatusPolling(); 
+						// this.stopCfStatusPolling();
 						// this.showToast('✨ 线上状态已全部激活！', 'success');
 					// }
 				// }
@@ -1145,15 +2575,15 @@ createApp({
 			// }
 		// },
 		// async startCfStatusPolling() {
-			// this.stopCfStatusPolling(); 
+			// this.stopCfStatusPolling();
 			// this.isLoadingCfRoutes = true;
-			
+
 			// this.showToast("🚀 开启 CF 状态智能监控...");
 
 			// this.cfStatusTimer = setInterval(() => {
 				// this.checkCfGlobalStatus();
 			// }, 8000);
-			// await this.fetchCfRoutes(); 
+			// await this.fetchCfRoutes();
 		// },
 		// stopCfStatusPolling() {
 			// if (this.cfStatusTimer) {
@@ -1182,8 +2612,8 @@ createApp({
 				// const data = await res.json();
 				// if (data.status === 'success') {
 					// if (data.domains) {
-						// this.cfRoutes = data.domains.split(',').filter(d=>d).map(d => ({ 
-							// domain: d, 
+						// this.cfRoutes = data.domains.split(',').filter(d=>d).map(d => ({
+							// domain: d,
 							// loading: false
 						// }));
 					// } else {
@@ -1207,7 +2637,7 @@ createApp({
 		// async deleteSelectedCfRoutes() {
 			// if (this.selectedCfRoutes.length === 0) return;
 			// const domainsToDelete = this.selectedCfRoutes.map(item => item.domain);
-			
+
 			// this.isDeletingCfRoutes = true;
 			// try {
 				// await this.executeDeleteCfDomains(domainsToDelete);
@@ -1217,7 +2647,7 @@ createApp({
 		// },
 
 		// async deleteSingleCfRoute(routeObj) {
-			// routeObj.loading = true; 
+			// routeObj.loading = true;
 			// try {
 				// await this.executeDeleteCfDomains([routeObj.domain]);
 			// } finally {
@@ -1461,6 +2891,7 @@ createApp({
                 this.showToast('请先停止当前运行的任务', 'warning');
                 return;
             }
+            this.currentTab = 'console';
             try {
                 const res = await this.authFetch('/api/start_check', {
                     method: 'POST'
@@ -1469,7 +2900,7 @@ createApp({
 
                 if(data.code === 200) {
                     this.showToast(data.message, 'success');
-                    this.pollStats();
+                    this.queuePollStats();
                 } else {
                     this.showToast(data.message || '启动测活失败', 'error');
                 }
@@ -1478,6 +2909,7 @@ createApp({
             }
         },
         async checkUpdate(isManual = false) {
+            if (this.appVersion === '检查中...' || !this.appVersion) return;
             try {
                 const res = await this.authFetch(`/api/system/check_update?current_version=${this.appVersion}`);
                 const data = await res.json();
@@ -1505,10 +2937,39 @@ createApp({
         },
         async promptUpdate() {
             if (!this.updateInfo.hasUpdate) return;
-            const msg = `🚀 发现新版本: ${this.updateInfo.version}\n\n📝 更新内容:\n${this.updateInfo.changelog}\n\n是否前往 GitHub 查看并下载更新？`;
+            const msg = `🚀 发现新版本: ${this.updateInfo.version}\n\n📝 更新内容:\n${this.updateInfo.changelog}\n\n是否立即执行一键更新？\n(系统将自动识别 Docker/本地环境，更新期间请勿关闭页面)`;
             const confirmed = await this.customConfirm(msg);
             if (confirmed) {
-                window.open(this.updateInfo.url, '_blank');
+                this.executeAutoUpdate();
+            }
+        },
+        async executeAutoUpdate() {
+            this.isUpdatingSystem = true;
+            this.showToast("🚀 正在下发更新指令，请耐心等待...", "info");
+            try {
+                const res = await this.authFetch('/api/system/auto_update', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    this.showToast(`✅ ${data.message}`, "success");
+                    if(this.statsTimer) clearInterval(this.statsTimer);
+                    if(this.evtSource) this.evtSource.close();
+
+                    this.showToast("⏳ 网页将在 20 秒后自动刷新...", "info");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 20000);
+
+                } else if (data.status === 'warning') {
+                    this.showToast(`⚠️ ${data.message}`, "warning");
+                    this.isUpdatingSystem = false;
+                } else {
+                    this.showToast(`❌ 更新失败: ${data.message}`, "error");
+                    this.isUpdatingSystem = false;
+                }
+            } catch (e) {
+                this.showToast("更新指令已发送，由于后端重启，连接已断开，请稍后手动刷新。", "warning");
+                setTimeout(() => { window.location.reload(); }, 20000);
             }
         },
         async getGmailAuthUrl() {
@@ -1585,18 +3046,15 @@ createApp({
             }
             const d = new Date(utcStr);
             if (isNaN(d.getTime())) return dateStr;
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            return formatMainlandDateTime(d);
         },
-        async exportSub2Api() {
+async exportSub2Api() {
             if (this.selectedAccounts.length === 0) {
                 this.showToast('请先勾选账号', 'warning');
                 return;
             }
             try {
-                const emailsToExport = this.selectedAccounts.map(item =>
-                    typeof item === 'object' ? item.email : item
-                );
+                const emailsToExport = this.selectedAccounts;
 
                 const response = await this.authFetch('/api/accounts/export_sub2api', {
                     method: 'POST',
@@ -1608,47 +3066,20 @@ createApp({
                     const accounts = res.data.accounts;
                     const timestamp = Math.floor(Date.now() / 1000);
 
-                    if (accounts.length > 1) {
-                        const zip = new JSZip();
+                    // 无论数量多少，直接将返回的数据(包含所有选中的accounts)作为一个JSON文件下载
+                    const content = JSON.stringify(res.data, null, 2);
+                    const blob = new Blob([content], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    // 文件名带上数量和时间戳
+                    link.download = `sub2api_批量导出_${accounts.length}个_${timestamp}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.URL.revokeObjectURL(url);
 
-                        accounts.forEach((acc, index) => {
-                            const prefix = (acc.name || "user").split('@')[0];
-
-                            const singleAccountData = {
-                                exported_at: res.data.exported_at,
-                                proxies: res.data.proxies,
-                                accounts: [acc]
-                            };
-
-                            const filename = `sub2api_${prefix}_${timestamp + index}.json`;
-                            zip.file(filename, JSON.stringify(singleAccountData, null, 2));
-                        });
-
-                        const content = await zip.generateAsync({ type: "blob" });
-                        const url = window.URL.createObjectURL(content);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `Sub2Api_批量导出_${accounts.length}个_${timestamp}.zip`;
-                        document.body.appendChild(link);
-                        link.click();
-                        link.remove();
-                        window.URL.revokeObjectURL(url);
-
-                        this.showToast(`🎉 成功打包并下载 ${accounts.length} 个独立配置文件！`, 'success');
-                    } else {
-                        const content = JSON.stringify(res.data, null, 2);
-                        const blob = new Blob([content], { type: 'application/json' });
-                        const url = window.URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `sub2api_export_${timestamp}.json`;
-                        document.body.appendChild(link);
-                        link.click();
-                        link.remove();
-                        window.URL.revokeObjectURL(url);
-
-                        this.showToast(`成功导出 ${accounts.length} 个账号到单个文件`, 'success');
-                    }
+                    this.showToast(`🎉 成功导出 ${accounts.length} 个账号到单个 JSON 文件`, 'success');
 
                     this.selectedAccounts = [];
                 } else {
@@ -1656,50 +3087,132 @@ createApp({
                 }
             } catch (error) {
                 console.error('导出异常:', error);
-                this.showToast('导出异常，请检查 JSZip 是否加载', 'error');
+                // 已经不再使用 JSZip，修改一下错误提示
+                this.showToast('导出异常，请检查网络或刷新页面', 'error');
+            }
+        },
+
+        async fetchInventoryStats() {
+            try {
+                const res = await this.authFetch('/api/accounts/stats');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    this.inventoryStats.local = json.data.local;
+                } else {
+                    console.error("获取统计数据失败:", json.message);
+                }
+            } catch (e) {
+                console.error('获取统计面板异常', e);
             }
         },
 
         async fetchCloudAccounts() {
             if (this.cloudFilters.length === 0) {
+                this.rawCloudAccounts = [];
                 this.cloudAccounts = [];
                 this.cloudTotal = 0;
+                this.inventoryStats.cloud = {
+                    total: 0, enabled: 0, cpa: 0, cpa_active: 0, cpa_disabled: 0, sub2api: 0, sub2api_active: 0, sub2api_disabled: 0, image2api: 0, image2api_active: 0, image2api_disabled: 0
+                };
+                this.cloudFetchState = { loading: false, currentType: '', completed: 0, total: 0, message: '未选择平台' };
                 return;
             }
-            const types = this.cloudFilters.join(',');
-            let url = `/api/cloud/accounts?types=${types}&status_filter=${this.cloudStatusFilter}&page=${this.cloudPage}&page_size=${this.cloudPageSize}`;
-
-            if (this.searchCloud) {
-                url += `&search=${encodeURIComponent(this.searchCloud)}`;
-            }
-
+            const typeQueue = [...this.cloudFilters];
+            this.cloudFetchState = {
+                loading: true,
+                currentType: typeQueue[0] || '',
+                completed: 0,
+                total: typeQueue.length,
+                message: '准备分批获取云端库存...'
+            };
             try {
-                const res = await this.authFetch(url);
-                const data = await res.json();
-                if(data.status === 'success') {
-                    this.cloudAccounts = (data.data || []).map(acc => ({
-                        ...acc,
-                        last_check: this.localCheckTimes[acc.id] || acc.last_check || '-',
-                        details: this.localCloudDetails[acc.id] || acc.details || {},
-                        _loading: null
-                    }));
-                    this.cloudTotal = data.total || 0;
-                    this.selectedCloud = [];
-                } else {
-                    this.showToast(data.message, "error");
+                const combined = [];
+                for (let index = 0; index < typeQueue.length; index += 1) {
+                    const type = typeQueue[index];
+                    this.cloudFetchState.currentType = type;
+                    this.cloudFetchState.message = `正在获取 ${type.toUpperCase()} 数据...`;
+                    const url = `/api/cloud/accounts?types=${type}&status_filter=all&page=1&page_size=2000`;
+                    const res = await this.authFetch(url);
+                    const data = await res.json();
+                    if (data.status !== 'success') {
+                        throw new Error(data.message || `${type} 拉取失败`);
+                    }
+                    combined.push(...(data.data || []));
+                    this.cloudFetchState.completed = index + 1;
                 }
+                this.rawCloudAccounts = combined.map(acc => ({
+                    ...acc,
+                    last_check: this.localCheckTimes[acc.id] || acc.last_check || '-',
+                    details: acc.account_type === 'image2api' ? (acc.details || {}) : (this.localCloudDetails[acc.id] || acc.details || {}),
+                    _loading: null
+                }));
+                this.inventoryStats.cloud = this.computeCloudStats(this.rawCloudAccounts);
+                this.applyCloudAccountView();
+                if (typeof this.fetchInventoryStats === 'function') {
+                    this.fetchInventoryStats();
+                }
+                this.cloudFetchState.message = `已完成 ${typeQueue.length} 个平台的分批获取`;
             } catch (e) {
                 console.error(e);
                 if (this.isLoggedIn && e.message !== "Unauthorized") {
                     this.showToast("获取云端数据失败", "error");
+                    this.inventoryStats.cloud = {
+                        total: 0, enabled: 0, cpa: 0, cpa_active: 0, cpa_disabled: 0, sub2api: 0, sub2api_active: 0, sub2api_disabled: 0, image2api: 0, image2api_active: 0, image2api_disabled: 0
+                    };
+                    this.rawCloudAccounts = [];
+                    this.cloudAccounts = [];
+                    this.cloudTotal = 0;
+                    this.cloudFetchState.message = '获取失败';
                 }
+            } finally {
+                this.cloudFetchState.loading = false;
             }
+        },
+        computeCloudStats(items) {
+            const rows = Array.isArray(items) ? items : [];
+            const isActive = (item) => item.status === 'active';
+            const isType = (item, type) => item.account_type === type;
+            return {
+                total: rows.length,
+                enabled: rows.filter(isActive).length,
+                cpa: rows.filter(item => isType(item, 'cpa')).length,
+                cpa_active: rows.filter(item => isType(item, 'cpa') && isActive(item)).length,
+                cpa_disabled: rows.filter(item => isType(item, 'cpa') && !isActive(item)).length,
+                sub2api: rows.filter(item => isType(item, 'sub2api')).length,
+                sub2api_active: rows.filter(item => isType(item, 'sub2api') && isActive(item)).length,
+                sub2api_disabled: rows.filter(item => isType(item, 'sub2api') && !isActive(item)).length,
+                image2api: rows.filter(item => isType(item, 'image2api')).length,
+                image2api_active: rows.filter(item => isType(item, 'image2api') && isActive(item)).length,
+                image2api_disabled: rows.filter(item => isType(item, 'image2api') && !isActive(item)).length
+            };
+        },
+        applyCloudAccountView() {
+            let rows = [...this.rawCloudAccounts];
+            if (this.cloudStatusFilter !== 'all') {
+                rows = rows.filter(item => item.status === this.cloudStatusFilter);
+            }
+            if (this.searchCloud) {
+                const term = this.searchCloud.toLowerCase();
+                rows = rows.filter(item => {
+                    const credential = String(item.credential || '').toLowerCase();
+                    const id = String(item.id || '').toLowerCase();
+                    return credential.includes(term) || id.includes(term);
+                });
+            }
+            this.cloudTotal = rows.length;
+            const totalPages = Math.max(1, Math.ceil(this.cloudTotal / this.cloudPageSize) || 1);
+            if (this.cloudPage > totalPages) {
+                this.cloudPage = totalPages;
+            }
+            const startIdx = (this.cloudPage - 1) * this.cloudPageSize;
+            this.cloudAccounts = rows.slice(startIdx, startIdx + this.cloudPageSize);
+            this.selectedCloud = [];
         },
 
         async singleCloudAction(acc, action) {
             if (action === 'delete' && !confirm('⚠️ 危险操作：确认在远端彻底删除该账号吗？')) return;
 
-            const actionName = action === 'check' ? '测活' : (action === 'enable' ? '启用' : (action === 'disable' ? '禁用' : '删除'));
+            const actionName = action === 'check' ? '测活' : (action === 'enable' ? '启用' : (action === 'disable' ? '禁用' : (action === 'refresh' ? '刷新凭证' : '删除')));
             this.showToast(`正在对账号进行 ${actionName}，请稍候...`, 'info');
             acc._loading = action;
 
@@ -1710,25 +3223,28 @@ createApp({
                 });
                 const result = await res.json();
                 if (result.updated_details && result.updated_details[acc.id]) {
-                    acc.details = result.updated_details[acc.id];
-                    this.localCloudDetails[acc.id] = result.updated_details[acc.id];
+                    acc.details = Object.assign({}, acc.details, result.updated_details[acc.id]);
+                    this.localCloudDetails[acc.id] = acc.details;
                 }
                 if (action === 'enable' && result.status !== 'error') acc.status = 'active';
                 if (action === 'disable' && result.status !== 'error') acc.status = 'disabled';
 
                 if (action === 'check') {
-                    const now = new Date().toLocaleString('zh-CN', { hour12: false });
+                    this.currentTab = 'console';
+            const now = formatMainlandDateTime(new Date());
                     this.localCheckTimes[acc.id] = now;
                     acc.last_check = now;
 
-                    if (result.status === 'warning') {
+                    if (result.status === 'warning' || result.status === 'error') {
                         acc.status = 'disabled';
+                    } else {
+                        acc.status = 'active';
                     }
                 }
                 this.showToast(result.message, result.status);
 
                 setTimeout(() => {
-                    if (action === 'delete' || action === 'check') {
+                    if (['delete', 'check', 'enable', 'disable', 'refresh'].includes(action)) {
                         this.fetchCloudAccounts();
                     }
                 }, 1500);
@@ -1739,38 +3255,54 @@ createApp({
                 acc._loading = null;
             }
         },
-
+        filterByCard(platformType, status) {
+            if (platformType === 'all') {
+                this.cloudFilters = ['sub2api', 'cpa', 'image2api'];
+            } else if (platformType === 'cpa') {
+                this.cloudFilters = ['cpa'];
+            } else if (platformType === 'sub2api') {
+                this.cloudFilters = ['sub2api'];
+            }else if (platformType === 'image2api') {
+                this.cloudFilters = ['image2api']
+            }
+            this.cloudStatusFilter = status || 'all';
+            this.cloudPage = 1;
+            this.fetchCloudAccounts();
+            const typeName = platformType === 'all' ? '全部平台' : (platformType === 'cpa' ? 'CPA' : (platformType === 'sub2api' ? 'Sub2API' : 'Image2API'));
+            const statusName = status === 'active' ? '存活' : (status === 'disabled' ? '失效' : '全部');
+            this.showToast(`已筛选: ${typeName} - ${statusName}账号`, 'info');
+        },
         async bulkCloudAction(action) {
             if (this.selectedCloud.length === 0) {
                 return this.showToast('请先勾选需要操作的账号', 'warning');
             }
             if (action === 'delete' && !confirm(`⚠️ 危险操作：确认删除选中的 ${this.selectedCloud.length} 个账号吗？`)) return;
-
-            const actionName = action === 'check' ? '测活' : (action === 'enable' ? '启用' : (action === 'disable' ? '禁用' : '删除'));
+            const actionAccounts = this.selectedCloud.map(key => {
+                const [id, type] = key.split('|');
+                return { id: String(id), type: type };
+            });
+            const actionName = action === 'check' ? '测活' : (action === 'enable' ? '启用' : (action === 'disable' ? '禁用' : (action === 'refresh' ? '刷新凭证' : '删除')));
             this.showToast(`正在批量 ${actionName} ${this.selectedCloud.length} 个账号，耗时较长请耐心等待...`, 'info');
             this.isCloudActionLoading = true;
 
             try {
                 const res = await this.authFetch('/api/cloud/action', {
                     method: 'POST',
-                    body: JSON.stringify({ accounts: this.selectedCloud, action: action })
+                    body: JSON.stringify({ accounts: actionAccounts, action: action })
                 });
                 const result = await res.json();
                 if (result.updated_details) {
-                    this.selectedCloud.forEach(selected => {
+                    actionAccounts.forEach(selected => {
                         const targetAcc = this.cloudAccounts.find(a => String(a.id) === String(selected.id) && a.account_type === selected.type);
-                        if (result.updated_details) {
-                            this.selectedCloud.forEach(selected => {
-                                if (result.updated_details[selected.id]) {
-                                    this.localCloudDetails[selected.id] = result.updated_details[selected.id]; // 存入缓存
-                                }
-                            });
+                        if (targetAcc && result.updated_details[selected.id]) {
+                            targetAcc.details = Object.assign({}, targetAcc.details, result.updated_details[selected.id]);
+                            this.localCloudDetails[selected.id] = targetAcc.details;
                         }
                     });
                 }
                 if (action === 'check') {
-                    const now = new Date().toLocaleString('zh-CN', { hour12: false });
-                    this.selectedCloud.forEach(c => { this.localCheckTimes[c.id] = now; });
+                    const now = formatMainlandDateTime(new Date());
+                    actionAccounts.forEach(c => { this.localCheckTimes[c.id] = now; });
                 }
 
                 this.showToast(result.message, result.status);
@@ -1782,12 +3314,9 @@ createApp({
                 this.isCloudActionLoading = false;
             }
         },
-        toggleAllCloud(e) {
-            if (e.target.checked) {
-                this.selectedCloud = this.filteredCloud.map(a => ({ id: String(a.id), type: a.account_type }));
-            } else {
-                this.selectedCloud = [];
-            }
+        toggleAll(event) {
+            if (event.target.checked) this.selectedAccounts = this.filteredAccounts.map(a => a.email);
+            else this.selectedAccounts = [];
         },
         viewCloudDetails(acc) {
             if (!acc.details || Object.keys(acc.details).length === 0) {
@@ -1805,12 +3334,16 @@ createApp({
                 return;
             }
             this.cloudPage = newPage;
-            this.fetchCloudAccounts();
+            this.applyCloudAccountView();
         },
         changeCloudPageSize() {
             this.cloudPage = 1;
             this.selectedCloud = [];
-            this.fetchCloudAccounts();
+            this.applyCloudAccountView();
+        },
+        onCloudSearchInput() {
+            this.cloudPage = 1;
+            this.applyCloudAccountView();
         },
         async remoteControlNode(nodeName, action) {
             try {
@@ -1821,12 +3354,125 @@ createApp({
                 const data = await res.json();
                 if (data.status === 'success') {
                     this.showToast(`✅ 指令 [${action}] 已成功发送至节点: ${nodeName}`, 'success');
+                    if (action === 'export_accounts') {
+                        setTimeout(() => this.fetchClusterSyncTasks({ silent: true }), 1000);
+                    }
                 } else {
                     this.showToast(data.message, 'warning');
                 }
             } catch (e) {
                 this.showToast('控制请求异常', 'error');
             }
+        },
+        async fetchClusterSyncTasks(options = {}) {
+            const { silent = false } = options;
+            if (!silent) {
+                this.clusterSyncTasksLoading = true;
+            }
+            try {
+                const res = await this.authFetch('/api/cluster/sync_tasks?limit=20');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.clusterSyncTasks = Array.isArray(data.tasks) ? data.tasks : [];
+                } else if (!silent) {
+                    this.showToast(data.message || '同步任务列表获取失败', 'warning');
+                }
+            } catch (e) {
+                if (!silent) {
+                    this.showToast('同步任务列表获取失败', 'error');
+                }
+            } finally {
+                if (!silent) {
+                    this.clusterSyncTasksLoading = false;
+                }
+            }
+        },
+        async clearTerminalClusterSyncTasks() {
+            const confirmed = await this.customConfirm('确定清理所有已完成、已取消和已中断的同步任务吗？此操作不可恢复。');
+            if (!confirmed) return;
+            try {
+                const res = await this.authFetch('/api/cluster/sync_tasks/clear_terminal', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message || '终态同步任务已清理', 'success');
+                    await this.fetchClusterSyncTasks();
+                } else {
+                    this.showToast(data.message || '终态同步任务清理失败', 'warning');
+                }
+            } catch (e) {
+                this.showToast('终态同步任务清理失败', 'error');
+            }
+        },
+        async retryClusterSyncTask(taskId) {
+            if (!taskId) return;
+            try {
+                const res = await this.authFetch(`/api/cluster/sync_tasks/${encodeURIComponent(taskId)}/retry`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message || `同步任务 ${taskId} 已重新排队`, 'success');
+                    await this.fetchClusterSyncTasks({ silent: true });
+                } else {
+                    this.showToast(data.message || '同步任务重试失败', 'warning');
+                }
+            } catch (e) {
+                this.showToast('同步任务重试失败', 'error');
+            }
+        },
+        async cancelClusterSyncTask(taskId) {
+            if (!taskId) return;
+            try {
+                const res = await this.authFetch(`/api/cluster/sync_tasks/${encodeURIComponent(taskId)}/cancel`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message || `同步任务 ${taskId} 已取消`, 'success');
+                    await this.fetchClusterSyncTasks({ silent: true });
+                } else {
+                    this.showToast(data.message || '同步任务取消失败', 'warning');
+                }
+            } catch (e) {
+                this.showToast('同步任务取消失败', 'error');
+            }
+        },
+        formatClusterSyncStatus(status) {
+            const statusMap = {
+                pending: '排队中',
+                running: '导入中',
+                success: '已完成',
+                partial_success: '部分成功',
+                failed: '失败',
+                retry_wait: '待重试',
+                cancel_requested: '取消中',
+                cancelled: '已取消'
+            };
+            return statusMap[String(status || '').trim()] || (status || '未知');
+        },
+        clusterSyncStatusClass(status) {
+            const normalized = String(status || '').trim();
+            if (normalized === 'success') return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+            if (normalized === 'partial_success') return 'bg-amber-50 text-amber-600 border-amber-200';
+            if (normalized === 'failed') return 'bg-rose-50 text-rose-600 border-rose-200';
+            if (normalized === 'retry_wait') return 'bg-orange-50 text-orange-600 border-orange-200';
+            if (normalized === 'cancel_requested') return 'bg-slate-100 text-slate-600 border-slate-300';
+            if (normalized === 'cancelled') return 'bg-slate-100 text-slate-500 border-slate-200';
+            if (normalized === 'running') return 'bg-sky-50 text-sky-600 border-sky-200';
+            return 'bg-slate-100 text-slate-600 border-slate-200';
+        },
+        formatClusterSyncTime(value) {
+            if (!value) return '-';
+            const normalized = String(value).replace(' ', 'T');
+            const date = new Date(normalized);
+            if (Number.isNaN(date.getTime())) return value;
+            return this.formatMainlandDateTime(date);
+        },
+        formatClusterSyncError(errorMessage) {
+            const text = String(errorMessage || '').trim();
+            return text || '-';
         },
         formatDuration(seconds) {
             if (!seconds || seconds < 0) return "0s";
@@ -1874,6 +3520,7 @@ createApp({
                 const res = JSON.parse(event.data);
                 if (res.status === 'success') {
                     this.clusterNodes = res.nodes;
+                    this.fetchClusterSyncTasks({ silent: true });
                 }
             };
 
@@ -1896,7 +3543,7 @@ createApp({
                     return;
                 }
                 const now = new Date();
-                const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            const timeStr = formatMainlandTime(now);
 
                 if (data.status !== 'success') {
                     this.logs.push({ parsed: true, time: timeStr, level: '总控', text: `任务生成失败: ${data.message}`, raw: `[${timeStr}] [总控] 任务生成失败: ${data.message}` });
@@ -1933,7 +3580,7 @@ createApp({
 
             } catch (error) {
                 const now = new Date();
-                const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            const timeStr = formatMainlandTime(now);
                 this.logs.push({ parsed: true, time: timeStr, level: '总控', text: `下发任务异常: ${error.message}`, raw: `[${timeStr}] [总控] 下发任务异常: ${error.message}` });
             }
         },
@@ -1967,7 +3614,7 @@ createApp({
 
                 if (event.data.type === "WORKER_READY") {
                     const now = new Date();
-                    const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            const timeStr = formatMainlandTime(now);
 
                     if (this._extDetectionTimer) {
                         clearInterval(this._extDetectionTimer);
@@ -2001,7 +3648,7 @@ createApp({
 
                 if (event.data.type === "WORKER_LOG_REPLY") {
                     const now = new Date();
-                    const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            const timeStr = formatMainlandTime(now);
                     this.logs.push({
                         parsed: true, time: timeStr, level: '节点',
                         text: event.data.log, raw: `[${timeStr}] [节点] ${event.data.log}`
@@ -2036,7 +3683,7 @@ createApp({
                             this.isRunning = false;
                             window.postMessage({ type: "CMD_STOP_WORKER" }, "*");
 
-                            const timeStr = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+                        const timeStr = formatMainlandTime(new Date());
                             this.logs.push({
                                 parsed: true, time: timeStr, level: '总控',
                                 text: `🛑 目标产量已达成，总控引擎已自动挂起。`,
@@ -2069,19 +3716,19 @@ createApp({
             this.config.reg_mode = mode;
 
             await this.saveConfig();
-            this.showToast(`模式已切换为: ${mode === 'protocol' ? '纯协议模式' : '插件托管模式'}`, 'info');
+            this.showToast(`模式已切换为: ${mode === 'email' ? '邮箱注册' : '手机号注册'}`, 'info');
 
-            if (mode === 'extension') {
-                this.listenToExtension();
-            } else {
-                if (this._extDetectionTimer) {
-                    clearInterval(this._extDetectionTimer);
-                    this._extDetectionTimer = null;
-                }
-                this.isExtConnected = false;
-                window.postMessage({ type: "CMD_STOP_WORKER" }, "*");
-                console.log("🛑 [总控] 已进入协议模式，切断插件链路。");
-            }
+            // if (mode === 'extension') {
+            //     this.listenToExtension();
+            // } else {
+            //     if (this._extDetectionTimer) {
+            //         clearInterval(this._extDetectionTimer);
+            //         this._extDetectionTimer = null;
+            //     }
+            //     this.isExtConnected = false;
+            //     window.postMessage({ type: "CMD_STOP_WORKER" }, "*");
+            //     console.log("🛑 [总控] 已进入协议模式，切断插件链路。");
+            // }
         },
         async fetchMailboxes(isManual = false) {
             if (isManual) this.mailboxPage = 1;
@@ -2118,7 +3765,7 @@ createApp({
             this.fetchMailboxes();
         },
         toggleAllMailboxes(event) {
-            if (event.target.checked) this.selectedMailboxes = [...this.filteredMailboxes];
+            if (event.target.checked) this.selectedMailboxes = this.filteredMailboxes.map(m => m.email);
             else this.selectedMailboxes = [];
         },
         async submitImportMailboxes() {
@@ -2148,16 +3795,17 @@ createApp({
             if (this.selectedMailboxes.length === 0) return;
             const confirmed = await this.customConfirm(`确定要删除选中的 ${this.selectedMailboxes.length} 个邮箱吗？`);
             if (!confirmed) return;
-
-            const idsToDelete = this.selectedMailboxes.map(m => m.id || m.email);
+            const selectedObjs = this.mailboxes.filter(m => this.selectedMailboxes.includes(m.email));
+            const idsToDelete = selectedObjs.map(m => m.id || m.email);
             try {
                 const res = await this.authFetch('/api/mailboxes/delete', {
                     method: 'POST',
-                    body: JSON.stringify({ ids: idsToDelete })
+                    body: JSON.stringify({ids: idsToDelete})
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
                     this.showToast("删除成功", "success");
+                    this.selectedMailboxes = []
                     this.fetchMailboxes();
                 } else {
                     this.showToast("删除失败: " + data.message, "error");
@@ -2166,7 +3814,8 @@ createApp({
                 this.showToast("请求异常", "error");
             }
         },
-        openOutlookAuthModal(mailbox) {
+        openOutlookAuthModal(mailbox)
+        {
             const cid = mailbox.client_id || this.config?.local_microsoft?.client_id || this.BUILTIN_CLIENT_ID;
             if (!cid) {
                 this.showToast("🚫 无法获取有效的 Client ID！", "warning");
@@ -2178,7 +3827,6 @@ createApp({
             this.outlookAuth.pastedUrl = '';
             this.outlookAuth.showModal = true;
         },
-
         async generateOutlookAuthUrl() {
             this.outlookAuth.isGenerating = true;
             try {
@@ -2249,7 +3897,8 @@ createApp({
                 this.showToast("请先勾选需要导出的邮箱", "warning");
                 return;
             }
-            const textContent = this.selectedMailboxes
+            const selectedObjs = this.mailboxes.filter(m => this.selectedMailboxes.includes(m.email));
+            const textContent = selectedObjs
                 .map(m => {
                     const pwd = m.password || '';
                     const cid = m.client_id || '';
@@ -2283,7 +3932,7 @@ createApp({
             const confirmed = await this.customConfirm(`确定要将选中的 ${this.selectedMailboxes.length} 个邮箱状态重置为【正常/闲置】吗？\n(可用于解除死号误标)`);
             if (!confirmed) return;
 
-            const emailsToRecover = this.selectedMailboxes.map(m => m.email);
+            const emailsToRecover = this.selectedMailboxes;
 
             try {
                 const res = await this.authFetch('/api/mailboxes/update_status', {
@@ -2311,15 +3960,78 @@ createApp({
                 if (d.status === 'success') {
                     this.clashPool.instances = d.data.instances;
                     this.clashPool.groups = d.data.groups;
-                    if (this.clashPool.instances.length > 0) {
+                    this.clashPool.subscriptions = (d.data.subscriptions?.items || []).map((item) => ({
+                        ...item,
+                        raw_url: item.url,
+                        url: this.resolveClashSubscriptionUrl(item.url)
+                    }));
+                    this.clashPool.mode = d.data.mode || '';
+                    this.clashPool.message = d.data.message || '';
+                    if (this.clashPool.instances.length > 0 && !this.clashPool.isDeploying) {
                         this.clashPool.count = this.clashPool.instances.length;
+                    }
+                    const currentSub = this.clashPool.subscriptions.find(item => item.selected) || this.clashPool.subscriptions[0] || null;
+                    this.clashPool.subUrl = currentSub?.url || '';
+                    const activeExists = this.clashPool.groups.some(group => group.name === this.clashPool.activeGroupName);
+                    if (this.clashPool.groups.length > 0) {
+                        if (!activeExists) {
+                            this.primeActiveClashGroup(this.clashPool.groups[0]);
+                        }
+                    } else {
+                        this.clashPool.activeGroupName = '';
+                    }
+                    if (!activeExists) {
+                        this.clashPool.view = 'groups';
+                        this.clashPool.delayResults = {};
                     }
                 }
             } catch (e) {}
             this.clashPool.loading = false;
         },
+        primeActiveClashGroup(group) {
+            if (!group || !group.name) return;
+            this.clashPool.activeGroupName = group.name;
+            this.fillProxyGroup(group.name);
+            if (!this.clashPool.nodeSelections[group.name]) {
+                this.clashPool.nodeSelections[group.name] = group.current || (Array.isArray(group.nodes) ? group.nodes[0] : '') || '';
+            }
+        },
+        setActiveClashGroup(group) {
+            this.primeActiveClashGroup(group);
+            this.clashPool.view = 'nodes';
+        },
+        backToClashGroups() {
+            this.clashPool.view = 'groups';
+        },
+        getClashDelayRows(group) {
+            if (!group || !Array.isArray(group.nodes)) return [];
+            const resultMap = this.clashPool.delayResults[group.name]?.results || {};
+            const healthyNodes = Array.isArray(group.healthy_nodes) ? group.healthy_nodes.filter(Boolean) : [];
+            const sourceNodes = healthyNodes.length ? healthyNodes : group.nodes;
+            const rows = sourceNodes.map((nodeName) => ({
+                nodeName,
+                result: resultMap[nodeName] || null,
+                isCurrent: group.current === nodeName,
+                isSelected: this.clashPool.nodeSelections[group.name] === nodeName
+            }));
+            rows.sort((a, b) => {
+                const aOk = a.result?.status === 'ok';
+                const bOk = b.result?.status === 'ok';
+                if (aOk && bOk) return (a.result.delay || Number.MAX_SAFE_INTEGER) - (b.result.delay || Number.MAX_SAFE_INTEGER);
+                if (aOk) return -1;
+                if (bOk) return 1;
+                if (a.isCurrent) return -1;
+                if (b.isCurrent) return 1;
+                return a.nodeName.localeCompare(b.nodeName, 'zh-CN');
+            });
+            return rows;
+        },
+        getClashHealthyCount(group) {
+            return Array.isArray(group?.healthy_nodes) ? group.healthy_nodes.filter(Boolean).length : 0;
+        },
         async handleClashDeploy() {
             this.showToast('正在调整实例规模...', 'info');
+            this.clashPool.isDeploying = true;
             try {
                 const res = await this.authFetch('/api/clash/deploy', {
                     method: 'POST',
@@ -2327,8 +4039,18 @@ createApp({
                 });
                 const d = await res.json();
                 this.showToast(d.message, d.status);
-                this.fetchClashPool();
-            } catch (e) { this.showToast('网络错误', 'error'); }
+                if (d.status === 'success') {
+                    setTimeout(() => {
+                        this.fetchClashPool();
+                        this.clashPool.isDeploying = false;
+                    }, 5000);
+                } else {
+                    this.clashPool.isDeploying = false;
+                }
+            } catch (e) {
+                this.showToast('网络错误', 'error');
+                this.clashPool.isDeploying = false;
+            }
         },
         async handleClashUpdate() {
             if (!this.clashPool.subUrl) return this.showToast('请输入订阅链接', 'error');
@@ -2340,7 +4062,11 @@ createApp({
                 });
                 const d = await res.json();
                 this.showToast(d.message, d.status);
-                this.fetchClashPool();
+                if (d.status === 'success') {
+                    setTimeout(() => {
+                        this.fetchClashPool();
+                    }, 5000);
+                }
             } catch (e) { this.showToast('网络错误', 'error'); }
             this.clashPool.loading = false;
         },
@@ -2348,6 +4074,175 @@ createApp({
             if (this.config && this.config.clash_proxy_pool) {
                 this.config.clash_proxy_pool.group_name = name;
                 this.showToast(`已自动填入策略组：${name}`, 'success');
+            }
+        },
+        async handleClashRuntime(action) {
+            this.clashPool.runtimeActionLoading = true;
+            try {
+                const res = await this.authFetch('/api/clash/runtime', {
+                    method: 'POST',
+                    body: JSON.stringify({ action })
+                });
+                const data = await res.json();
+                this.showToast(data.message || 'Clash 运行控制已执行', data.status);
+                if (data.status === 'success') {
+                    setTimeout(() => this.fetchClashPool(), 1200);
+                }
+            } catch (e) {
+                this.showToast('Clash 运行控制请求失败', 'error');
+            } finally {
+                this.clashPool.runtimeActionLoading = false;
+            }
+        },
+        async addClashSubscription() {
+            if (!this.clashPool.newSubscriptionUrl) {
+                this.showToast('请输入订阅链接', 'warning');
+                return;
+            }
+            this.clashPool.subscriptionActionLoading = true;
+            try {
+                const normalizedUrl = this.resolveClashSubscriptionUrl(this.clashPool.newSubscriptionUrl);
+                const res = await this.authFetch('/api/clash/subscriptions/add', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: this.clashPool.newSubscriptionName,
+                        url: normalizedUrl,
+                        make_selected: this.clashPool.makeSelectedSubscription
+                    })
+                });
+                const data = await res.json();
+                this.showToast(data.message || '订阅已保存', data.status);
+                if (data.status === 'success') {
+                    this.clashPool.newSubscriptionName = '';
+                    this.clashPool.newSubscriptionUrl = '';
+                    await this.fetchClashPool();
+                }
+            } catch (e) {
+                this.showToast('保存订阅失败', 'error');
+            } finally {
+                this.clashPool.subscriptionActionLoading = false;
+            }
+        },
+        async selectClashSubscription(subscriptionId) {
+            this.clashPool.subscriptionActionLoading = true;
+            try {
+                this.clashPool.activeGroupName = '';
+                this.clashPool.view = 'groups';
+                this.clashPool.delayResults = {};
+                const subscription = this.clashPool.subscriptions.find(item => item.id === subscriptionId);
+                const res = await this.authFetch('/api/clash/subscriptions/select', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        subscription_id: subscriptionId,
+                        target: this.clashPool.target,
+                        resolved_url: subscription?.url || ''
+                    })
+                });
+                const data = await res.json();
+                const label = this.formatClashSubscriptionLabel(subscription);
+                this.showToast(
+                    data.status === 'success'
+                        ? `已切换订阅：${label}`
+                        : (data.message || `切换订阅失败：${label}`),
+                    data.status
+                );
+                if (data.status === 'success') {
+                    await this.fetchClashPool();
+                }
+            } catch (e) {
+                this.showToast('切换订阅失败', 'error');
+            } finally {
+                this.clashPool.subscriptionActionLoading = false;
+            }
+        },
+        async deleteClashSubscription(subscription) {
+            const confirmed = await this.customConfirm(`确定删除订阅 [${subscription?.name || subscription?.id || '未命名'}] 吗？`);
+            if (!confirmed) return;
+            this.clashPool.subscriptionActionLoading = true;
+            try {
+                const res = await this.authFetch('/api/clash/subscriptions/delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ subscription_id: subscription.id })
+                });
+                const data = await res.json();
+                this.showToast(data.message || '订阅已删除', data.status);
+                if (data.status === 'success') {
+                    await this.fetchClashPool();
+                }
+            } catch (e) {
+                this.showToast('删除订阅失败', 'error');
+            } finally {
+                this.clashPool.subscriptionActionLoading = false;
+            }
+        },
+        async testClashGroup(groupName) {
+            if (!groupName) return;
+            this.clashPool.delayLoading = true;
+            try {
+                const res = await this.authFetch('/api/clash/delay', {
+                    method: 'POST',
+                    body: JSON.stringify({ group_name: groupName, target: this.clashPool.target })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.clashPool.delayResults[groupName] = data.data;
+                    const group = this.clashPool.groups.find(item => item.name === groupName);
+                    if (group && Array.isArray(data.data?.healthy_nodes)) {
+                        group.healthy_nodes = data.data.healthy_nodes;
+                    }
+                    this.showToast(data.message || '延迟测试完成', 'success');
+                } else {
+                    this.showToast(data.message || '延迟测试失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('延迟测试请求失败', 'error');
+            } finally {
+                this.clashPool.delayLoading = false;
+            }
+        },
+        async clearClashHealthyNodes(groupName) {
+            if (!groupName) return;
+            const confirmed = await this.customConfirm(`确定清空策略组 [${groupName}] 的有效节点池吗？清空后会重新显示全部节点。`);
+            if (!confirmed) return;
+            this.clashPool.delayLoading = true;
+            try {
+                const res = await this.authFetch('/api/clash/tested_nodes/clear', {
+                    method: 'POST',
+                    body: JSON.stringify({ group_name: groupName })
+                });
+                const data = await res.json();
+                this.showToast(data.message || '有效节点池已清空', data.status);
+                if (data.status === 'success') {
+                    const group = this.clashPool.groups.find(item => item.name === groupName);
+                    if (group) group.healthy_nodes = [];
+                    if (this.clashPool.delayResults[groupName]) {
+                        this.clashPool.delayResults[groupName].healthy_nodes = [];
+                    }
+                }
+            } catch (e) {
+                this.showToast('清空有效节点池失败', 'error');
+            } finally {
+                this.clashPool.delayLoading = false;
+            }
+        },
+        async switchClashGroupNode(groupName) {
+            const proxyName = this.clashPool.nodeSelections[groupName];
+            if (!groupName || !proxyName) {
+                this.showToast('请先选择策略组和目标节点', 'warning');
+                return;
+            }
+            try {
+                const res = await this.authFetch('/api/clash/switch', {
+                    method: 'POST',
+                    body: JSON.stringify({ group_name: groupName, proxy_name: proxyName, target: this.clashPool.target })
+                });
+                const data = await res.json();
+                this.showToast(data.message || '节点已切换', data.status);
+                if (data.status === 'success') {
+                    await this.fetchClashPool();
+                }
+            } catch (e) {
+                this.showToast('切换节点失败', 'error');
             }
         },
         syncClusterToPool() {
@@ -2470,6 +4365,7 @@ createApp({
                 if (data.status === 'success') {
                     this.showToast('账号库已全部清空', 'success');
                     this.fetchAccounts();
+                    this.fetchInventoryStats();
                 } else {
                     this.showToast(data.message, 'error');
                 }
@@ -2583,5 +4479,624 @@ createApp({
             });
             return proxyPool;
         },
+        async bulkRefreshLocalTokens() {
+            if (this.selectedAccounts.length === 0) return;
+
+            const confirmed = await this.customConfirm(`确定要批量刷新这 ${this.selectedAccounts.length} 个账号的凭证吗？\n\n系统会自动剔除死号，并将成功的新凭证同步覆盖至远端平台。`);
+            if (!confirmed) return;
+
+            this.isRefreshingAccounts = true;
+            this.showToast(`🚀 正在后端并发刷新 ${this.selectedAccounts.length} 个账号，请稍候...`, 'info');
+            this.currentTab = 'console';
+            try {
+                const emails = this.selectedAccounts;
+                const res = await this.authFetch('/api/accounts/bulk_refresh', {
+                    method: 'POST',
+                    body: JSON.stringify({ emails: emails })
+                });
+                const result = await res.json();
+
+                this.showToast(result.message, result.status);
+            } catch (e) {
+                this.showToast("请求异常", "error");
+            } finally {
+                this.selectedAccounts = [];
+                this.fetchAccounts();
+                this.fetchInventoryStats();
+                this.isRefreshingAccounts = false;
+            }
+        },
+        async fetchSystemVersion() {
+            try {
+                const res = await fetch('/api/system/version');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.appVersion = data.version;
+                }
+            } catch (e) {
+                return null;
+            }
+        },
+        getPlatformBadges(platformStr) {
+            if (!platformStr) return [];
+            const platforms = platformStr.split(',')
+                                         .map(p => p.trim().toUpperCase())
+                                         .filter(p => p);
+
+            if (platforms.length >= 3) {
+                return [{ name: '🚀 三平台同步', type: 'TRIPLE' }];
+            }
+            return platforms.map(p => {
+                let displayName = p;
+                if (p === 'IMAGE2API') displayName = '🖼️ IMAGE2API';
+                if (p === 'SUB2API') displayName = '🛸 SUB2API';
+                if (p === 'CPA') displayName = '🎯 CPA';
+                return { name: displayName, type: p };
+            });
+        },
+        getBadgeClass(type) {
+            switch (type) {
+                case 'CPA':
+                    return 'bg-blue-50 text-blue-600 border-blue-200';
+                case 'SUB2API':
+                    return 'bg-purple-50 text-purple-600 border-purple-200';
+                case 'IMAGE2API':
+                    return 'bg-pink-50 text-pink-600 border-pink-200';
+                case 'TRIPLE':
+                    return 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white border-transparent shadow-md';
+                default:
+                    return 'bg-slate-50 text-slate-600 border-slate-200';
+            }
+        },
+        async fetchTeamAccounts(isManual = false) {
+            if (isManual) this.teamPage = 1;
+            let url = `/api/team_accounts?page=${this.teamPage}&page_size=${this.teamPageSize}`;
+
+            try {
+                const res = await this.authFetch(url);
+                const data = await res.json();
+                if(data.status === 'success') {
+                    this.teamAccounts = data.data;
+                    this.totalTeamAccounts = data.total || this.teamAccounts.length;
+                    if (isManual) this.showToast("Team 库已刷新！", "success");
+                }
+            } catch (e) {
+                console.error("获取 Team 库失败:", e);
+            }
+        },
+        changeTeamPage(newPage) {
+            if (!newPage || isNaN(newPage)) newPage = 1;
+            const maxPage = Math.ceil(this.totalTeamAccounts / this.teamPageSize) || 1;
+            newPage = Math.max(1, Math.min(newPage, maxPage));
+            if (this.teamPage === newPage) {
+                this.$forceUpdate();
+                return;
+            }
+            this.teamPage = newPage;
+            this.fetchTeamAccounts();
+        },
+        async submitImportTeams() {
+            if (!this.importTeamText.trim()) return this.showToast("请输入内容", "warning");
+            this.isImportingTeam = true;
+            try {
+                const res = await this.authFetch('/api/team_accounts/import', {
+                    method: 'POST',
+                    body: JSON.stringify({ raw_text: this.importTeamText })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(`成功导入 ${data.count} 个 Team Token！`, "success");
+                    this.showImportTeamModal = false;
+                    this.importTeamText = '';
+                    this.fetchTeamAccounts(true);
+                } else {
+                    this.showToast("导入失败: " + data.message, "error");
+                }
+            } catch (e) {
+                this.showToast("导入请求失败", "error");
+            } finally {
+                this.isImportingTeam = false;
+            }
+        },
+        async deleteSingleTeam(id) {
+            const confirmed = await this.customConfirm('确定要删除该 Team 账号吗？');
+            if (!confirmed) return;
+            try {
+                const res = await this.authFetch('/api/team_accounts/delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ ids: [id] })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast("删除成功", "success");
+                    this.fetchTeamAccounts();
+                } else {
+                    this.showToast("删除失败: " + data.message, "error");
+                }
+            } catch (e) {
+                this.showToast("请求异常", "error");
+            }
+        },
+        async clearAllTeamAccounts() {
+            const confirmed = await this.customConfirm('⚠️ 危险操作！确定要清空【Team 团队账号库】中的所有数据吗？');
+            if (!confirmed) return;
+            try {
+                const res = await this.authFetch('/api/team_accounts/clear_all', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    this.showToast('Team 库已全部清空', 'success');
+                    this.fetchTeamAccounts();
+                } else {
+                    this.showToast(data.message, 'error');
+                }
+            } catch (e) {
+                this.showToast('清空异常', 'error');
+            }
+        },
+        async handleOverspeedToggle(event) {
+            const isTurningOn = event.target.checked;
+            if (isTurningOn) {
+                const hasCookie = this.teamAccounts && this.teamAccounts.some(team => team.cookies && team.cookies.trim() !== '');
+
+                if (!hasCookie) {
+                    this.showToast('⛔ 开启失败：当前账号库中未检测到完整的 Cookie 数据！', 'error');
+                    this.showToast('请先按 access_token----cookies 格式导入数据。', 'warning');
+                    event.target.checked = false;
+                    this.config.team_mode.overspeed = false;
+                    return;
+                }
+                this.config.team_mode.enable = true;
+            }
+            this.config.team_mode.overspeed = isTurningOn;
+            await this.saveConfig();
+            this.showToast(`🏎️ 超速妙模式已${isTurningOn ? '开启' : '关闭'}`, 'success');
+            this.showToast(`超速妙模式最大4线程，线程请不要设置过高，正常账号请不要开启该功能`, 'success');
+        },
+        async uploadLicenseFile() {
+            const fileInput = document.getElementById('licenseFileInput');
+            if (!fileInput) {
+                this.showToast('未找到授权文件选择框，请刷新页面后重试', 'error');
+                return;
+            }
+            if (!fileInput.files.length) {
+                fileInput.onchange = () => {
+                    if (fileInput.files.length) this.uploadLicenseFile();
+                    fileInput.onchange = null;
+                };
+                fileInput.click();
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onerror = () => {
+                this.showToast('读取授权文件失败，请重新选择文件', 'error');
+            };
+            reader.onload = async (e) => {
+                const fileContent = String(e.target.result || '').trim();
+                if (!fileContent) {
+                    this.showToast('授权文件内容为空', 'warning');
+                    return;
+                }
+
+                try {
+                    this.showToast('正在上传授权文件...', 'info');
+                    const response = await this.authFetch('/api/auth/upload_license', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: fileContent
+                        })
+                    });
+
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        this.showToast(res.message, 'success');
+                        fileInput.value = '';
+                    } else {
+                        this.showToast(res.message || '上传授权文件失败', 'error');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    this.showToast('上传授权文件发生网络错误，请确认登录状态后重试', 'error');
+                }
+            };
+            reader.readAsText(file);
+        },
+        async submitAuthReset() {
+            if (!this.authResetModal.clearLicense && !this.authResetModal.clearHwid && !this.authResetModal.clearLease) {
+                this.showToast('请至少勾选一项需要清除的数据！', 'warning');
+                return;
+            }
+            const confirmed = await this.customConfirm('⚠️ 危险操作：清除授权数据后可能导致程序异常或需要重新绑定授权！\n\n确定继续吗？');
+            if (!confirmed) return;
+            try {
+                const response = await this.authFetch('/api/auth/reset', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        clear_license: this.authResetModal.clearLicense,
+                        clear_hwid: this.authResetModal.clearHwid,
+                        clear_lease: this.authResetModal.clearLease
+                    })
+                });
+
+                const res = await response.json();
+                if (res.status === 'success') {
+                    this.showToast(res.message, 'success');
+                    this.authResetModal.show = false;
+                } else {
+                    this.showToast(res.message, 'error');
+                }
+            } catch (error) {
+                this.showToast('执行重置操作发生网络错误', 'error');
+            }
+        },
+        async testTgNotification() {
+            if (!this.config.tg_bot.token || !this.config.tg_bot.chat_id) {
+                this.showToast('请先填写完整的 Bot Token 和 Chat ID', 'warning');
+                return;
+            }
+            this.isTestingTg = true;
+            this.showToast('正在发送测试消息，请稍候...', 'info');
+            try {
+                const res = await this.authFetch('/api/notify/test_tg', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: this.config.tg_bot.token,
+                        chat_id: this.config.tg_bot.chat_id
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message, 'success');
+                } else {
+                    this.showToast(data.message, 'error');
+                }
+            } catch (e) {
+                this.showToast('测试请求异常，请检查后端网络或全局代理设置', 'error');
+            } finally {
+                this.isTestingTg = false;
+            }
+        },
+        async clearGmailToken() {
+            const confirmed = await this.customConfirm('确定要清除已保存的 Gmail 授权 Token 吗？\n清除后系统将无法读取邮件，直到你重新完成 OAuth 授权。');
+            if (!confirmed) return;
+            try {
+                const res = await this.authFetch('/api/gmail/clear_token', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message, 'success');
+                } else {
+                    this.showToast(data.message, 'error');
+                }
+            } catch (error) {
+                this.showToast('清理授权失败', 'error');
+            }
+        },
+        async uploadGmailCredentials() {
+            const fileInput = document.getElementById('gmailCredentialsInput');
+            if (!fileInput || !fileInput.files.length) {
+                this.showToast('请先选择从 Google 下载的 JSON 凭据文件！', 'warning');
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const jsonContent = e.target.result;
+
+                try {
+                    JSON.parse(jsonContent);
+                } catch (err) {
+                    this.showToast('非法格式：请确保上传的是正确的 JSON 文件！', 'error');
+                    return;
+                }
+                this.showToast('正在同步凭据至云端...', 'info');
+
+                try {
+                    const response = await this.authFetch('/api/gmail/upload_credentials', {
+                        method: 'POST',
+                        body: JSON.stringify({ content: jsonContent })
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        this.showToast(data.message, 'success');
+                        fileInput.value = '';
+                    } else {
+                        this.showToast(data.message, 'error');
+                    }
+                } catch (error) {
+                    this.showToast('上传失败，请检查后端 API 连通性', 'error');
+                }
+            };
+            reader.readAsText(file);
+        },
+        copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                this.showToast('✅ 复制成功: ' + text, 'success');
+            }).catch(() => {
+                this.showToast('❌ 复制失败', 'error');
+            });
+        },
+
+        async handleCFBatchHosting() {
+            if (!this.config.mail_domains) return this.showToast('请填写主发信域名池！', 'warning');
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 API Key！', 'warning');
+
+            this.cfTools.isHosting = true;
+            this.showToast('正在连线 CF 获取 NS，请稍候...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/add_zones', {
+                    method: 'POST',
+                    body: JSON.stringify({ domains: this.config.mail_domains, api_email: this.config.cf_api_email, api_key: this.config.cf_api_key })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data;
+                    this.showToast('✅ 批量获取 NS 完成，请在界面下方复制修改！', 'success');
+                    this.currentTab = 'email';
+                } else this.showToast(data.message, 'error');
+            } catch (e) { this.showToast('请求异常', 'error'); } finally { this.cfTools.isHosting = false; }
+        },
+        async handleCFEnableEmail() {
+            if (!this.config.mail_domains) return this.showToast('发信域名池为空', 'warning');
+            this.cfTools.isEnablingEmail = true;
+            this.showToast('正在检测 NS 并激活 CF 企业邮局...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/enable_email', {
+                    method: 'POST',
+                    body: JSON.stringify({ domains: this.config.mail_domains, api_email: this.config.cf_api_email, api_key: this.config.cf_api_key })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data;
+                    this.showToast('🎉 邮件服务校验激活完毕！', 'success');
+                    this.currentTab = 'email';
+                } else this.showToast(data.message, 'error');
+            } catch (e) { this.showToast('请求异常', 'error'); } finally { this.cfTools.isEnablingEmail = false; }
+        },
+        async handleCFDeleteHosting() {
+            const targetDomains = String(this.cfTools.deleteDomains || '').trim();
+            if (!targetDomains) return this.showToast('请先填写需要删除的 CF 托管域名！', 'warning');
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 API Key！', 'warning');
+
+            const confirmed = await this.customConfirm(`⚠️ 危险操作：\n\n即将删除你在下方填写的 CF 托管域名及其 DNS / 邮件路由配置，确定继续吗？`);
+            if (!confirmed) return;
+
+            this.cfTools.isDeletingHosting = true;
+            this.showToast('正在批量删除 CF 托管域名...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/delete_zones', {
+                    method: 'POST',
+                    body: JSON.stringify({ domains: targetDomains, api_email: this.config.cf_api_email, api_key: this.config.cf_api_key })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data || [];
+                    this.showToast('✅ 托管域名删除完成', 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(data.message || '删除失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('请求异常', 'error');
+            } finally {
+                this.cfTools.isDeletingHosting = false;
+            }
+        },
+        async handleCFDeployWorker() {
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 凭据！', 'warning');
+            if (!this.cfTools.workerName) return this.showToast('请输入 Worker 项目名！', 'warning');
+
+            let currentSecret = this.config.openai_cpa?.webhook_secret || '';
+            const currentWebhookUrl = window.location.origin;
+
+            const confirmed = await this.customConfirm(`将在后台为您部署 Worker: [${this.cfTools.workerName}]\n自动注入当前面板地址和通信密钥，确定执行吗？`);
+            if (!confirmed) return;
+
+            this.cfTools.isDeploying = true;
+            this.showToast('正在推送至 Cloudflare 节点...', 'info');
+            this.currentTab = 'console';
+
+            try {
+                const res = await this.authFetch('/api/cloudflare/deploy_worker', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key,
+                        worker_name: this.cfTools.workerName,
+                        webhook_url: currentWebhookUrl,
+                        webhook_secret: currentSecret
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(`🎉 Worker 部署并绑定就绪！`, 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(`部署失败: ${data.message}`, 'error');
+                }
+            } catch (e) { this.showToast('请求异常', 'error'); } finally { this.cfTools.isDeploying = false; }
+        },
+        async handleCFCatchAll() {
+            if (!this.config.mail_domains) return this.showToast('发信域名池为空', 'warning');
+            if (!this.cfTools.workerName) return this.showToast('请输入目标 Worker 项目名', 'warning');
+
+            this.cfTools.isSettingCatchAll = true;
+            this.showToast('正在下发 Catch-All 路由规则...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/setup_catch_all', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        domains: this.config.mail_domains, api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key, worker_name: this.cfTools.workerName
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data;
+                    this.showToast('🎉 Catch-All 规则配置完毕！', 'success');
+                    this.currentTab = 'email';
+                } else this.showToast(data.message, 'error');
+            } catch (e) { this.showToast('请求异常', 'error'); } finally { this.cfTools.isSettingCatchAll = false; }
+        },
+        async fetchImageAccounts(isManual = false) {
+            if (isManual) this.imagePage = 1;
+            let url = `/api/image_accounts?page=${this.imagePage}&page_size=${this.imagePageSize}`;
+            if (this.searchImageAccounts) {
+                url += `&search=${encodeURIComponent(this.searchImageAccounts)}`;
+            }
+            try {
+                const res = await this.authFetch(url);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.imageAccounts = data.data;
+                    this.totalImageAccounts = data.total;
+                    if (isManual) this.showToast("半成品库已刷新", "success");
+                }
+            } catch (e) {
+                this.showToast("半成品库加载失败", "error");
+            }
+        },
+        changeImagePage(newPage) {
+            this.imagePage = newPage;
+            this.fetchImageAccounts();
+        },
+        changeImagePageSize() {
+            this.imagePage = 1;
+            this.fetchImageAccounts();
+        },
+        toggleAllImageAccounts(e) {
+            if (e.target.checked) {
+                this.selectedImageAccounts = this.imageAccounts.map(a => a.email);
+            } else {
+                this.selectedImageAccounts = [];
+            }
+        },
+
+        async deleteSelectedImageAccounts() {
+            if (this.selectedImageAccounts.length === 0) return;
+            if (!confirm(`确定要删除选中的 ${this.selectedImageAccounts.length} 个半成品账号吗？`)) return;
+
+            try {
+                const res = await this.authFetch('/api/accounts/delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ emails: this.selectedImageAccounts })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast("删除成功", "success");
+                    this.selectedImageAccounts = [];
+                    this.fetchImageAccounts();
+                } else {
+                    this.showToast("删除失败", "error");
+                }
+            } catch (e) {
+                this.showToast("删除请求失败", "error");
+            }
+        },
+        exportImageAccounts() {
+            if (this.selectedImageAccounts.length === 0 && this.imageAccounts.length === 0) {
+                this.showToast("没有可导出的数据", "warning");
+                return;
+            }
+            const targetList = this.selectedImageAccounts.length > 0
+                ? this.imageAccounts.filter(a => this.selectedImageAccounts.includes(a.email))
+                : this.imageAccounts;
+
+            const text = targetList.map(a => `${a.email}----${a.password}`).join('\n');
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `IMG_Accounts_${new Date().getTime()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            this.selectedImageAccounts = [];
+        },
+        async triggerOAuthUpgrade(emailsParam) {
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/image_accounts/upgrade_oauth', {
+                    method: 'POST',
+                    body: JSON.stringify({ emails: emailsParam })
+                });
+                const data = await res.json();
+                if(data.status === 'success') {
+                    this.showToast(`任务已提交: 开始处理 ${data.count} 个账号`, "success");
+                    this.fetchImageAccounts();
+                } else {
+                    this.showToast(data.message || "请求失败", "error");
+                }
+            } catch(e) {
+                this.showToast("网络请求异常", "error");
+            }
+        },
+
+        async upgradeSingleImageAccount(acc) {
+            acc._upgrading = true;
+            await this.triggerOAuthUpgrade([acc.email]);
+            setTimeout(() => { acc._upgrading = false; this.fetchImageAccounts(); }, 2000);
+        },
+
+        async upgradeSelectedImageAccounts() {
+            if(this.selectedImageAccounts.length === 0) return;
+            this.isUpgradingSelected = true;
+            await this.triggerOAuthUpgrade(this.selectedImageAccounts);
+            this.isUpgradingSelected = false;
+            this.selectedImageAccounts = [];
+        },
+
+        async upgradeAllImageAccounts() {
+            if(!confirm("确定要对所有 IMG 账号进行 OAuth 凭证提取吗？该操作将占用所有并发线程。")) return;
+            this.isUpgradingOAuthAll = true;
+            await this.triggerOAuthUpgrade("ALL");
+            this.isUpgradingOAuthAll = false;
+        },
+        async bulkFetchSub2ApiUsage() {
+            const sub2apiIds = this.selectedCloud
+                .filter(val => val.endsWith('|sub2api'))
+                .map(val => val.split('|')[0]);
+
+            if (sub2apiIds.length === 0) {
+                this.showToast('当前选中的账号中没有 Sub2API 类型的账号，无法获取利用率。', 'warning');
+                return;
+            }
+
+            this.isCloudActionLoading = true;
+            try {
+                const response = await this.authFetch('/api/cloud/sub2api/usage/bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ account_ids: sub2apiIds })
+                });
+
+                const res = await response.json();
+
+                if (res.status === 'success') {
+                    const usageData = res.data;
+                    this.cloudAccounts.forEach(acc => {
+                        if (acc.account_type === 'sub2api' && usageData[acc.id]) {
+                            if (!acc.details) {
+                                acc.details = {};
+                            }
+                            acc.details.window_stats = usageData[acc.id];
+                        }
+                    });
+                    this.showToast(`成功刷新了 ${sub2apiIds.length} 个账号的额度利用率！`, 'success');
+                } else {
+                    this.showToast(res.message || '获取利用率失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('网络错误: ' + e.message, 'error');
+            } finally {
+                this.isCloudActionLoading = false;
+            }
+        }
     }
 }).mount('#app');
+

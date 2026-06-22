@@ -1,4 +1,6 @@
 import os
+import uuid
+import random
 import time
 import urllib.parse
 from typing import Any, Dict, Optional, Tuple
@@ -96,20 +98,41 @@ def _post_with_retry(
     raise RuntimeError("Request failed without exception")
 
 
-def _oai_headers(did: str, extra: dict = None) -> dict:
-    h = {
-        "accept": "application/json",
-        "accept-language": "ko-KR,ko;q=0.9",
-        "user-agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/110.0.0.0 Safari/537.36"
-        ),
-        "sec-ch-ua": '"Google Chrome";v="110", "Chromium";v="110", "Not_A Brand";v="24"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Windows"',
-        "oai-device-id": did,
+def _make_trace_headers() -> dict[str, str]:
+    trace_id = str(random.getrandbits(64))
+    parent_id = str(random.getrandbits(64))
+    return {
+        "traceparent": f"00-{uuid.uuid4().hex}-{format(int(parent_id), '016x')}-01",
+        "tracestate": "dd=s:1;o:rum",
+        "x-datadog-origin": "rum",
+        "x-datadog-parent-id": parent_id,
+        "x-datadog-sampling-priority": "1",
+        "x-datadog-trace-id": trace_id,
     }
+
+
+def _oai_headers(did: str, extra: dict = None, is_navigate: bool = False) -> dict:
+    h = {
+        "accept-language": "en-US,en;q=0.9",
+    }
+    if did:
+        h["oai-device-id"] = did
+    h.update(_make_trace_headers())
+    if is_navigate:
+        h.update({
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "same-origin",
+            "upgrade-insecure-requests": "1",
+        })
+    else:
+        h.update({
+            "accept": "application/json",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+        })
     if extra:
         h.update(extra)
     return h

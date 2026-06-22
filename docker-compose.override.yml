@@ -1,0 +1,7 @@
+services:
+  codex-web:
+    image: wenfxl/wenfxl-codex-manager:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    volumes:
+      - ./data/wenfxl.license:/app/wenfxl.license:ro

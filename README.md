@@ -1,6 +1,14 @@
 ﻿# Wenfxl Codex Manager Web Console
-[![Telegram Group](https://img.shields.io/badge/Telegram-Community_Chat-0088cc?style=for-the-badge&logo=telegram)](https://t.me/+4AmjbVPvvRgxMDVl)
+[![Telegram Group](https://img.shields.io/badge/Telegram-Community_Chat-0088cc?style=for-the-badge&logo=telegram)](https://t.me/+srBiKuPvn4A3YmNl)
 [![License](https://img.shields.io/badge/License-CC_BY--NC_4.0-lightgrey?style=for-the-badge)](https://creativecommons.org/licenses/by-nc/4.0/legalcode)
+
+> ⚠️ **CRITICAL UPDATE (April 29, 2026) 20:29**
+> 
+> The official Telegram community has been fully migrated! The original group is no longer active.
+> 
+> **ATTENTION:** The authentication system of Wenfxl Codex Manager is strictly bound to our official group. All users MUST **join the new group immediately**. Failure to do so will result in an HTTP 403 error and automatic service suspension during the next silent authorization check.
+> 
+> 👉 **[Click Here to Join the NEW Official Group](https://t.me/+srBiKuPvn4A3YmNl)**
 
 An advanced Distributed Automation Platform for high-concurrency account registration and full-lifecycle inventory management. It serves as a centralized Web Orchestration Hub that seamlessly synchronizes distributed browser extension workers (Classic Mode), multi-backend mailbox engines, and enterprise-grade cloud warehouses (CPA/Sub2API) into a unified master-worker ecosystem.
 
@@ -44,8 +52,9 @@ pip install -r requirements.txt
 ## ☕ Buy me a coffee
 
 If you find this tool helpful or if it has saved you time, consider buying me a coffee! Your support is a great motivation for continuous maintenance and updates.
-- ⚡ **Afdian:** [https://ifdian.net/a/wenfxl](https://ifdian.net/a/wenfxl)
-- 🪙 **USDT (TRX/Tron/TRC20):** `TLMNmyfUajfGSBhUfJ1orqxpvv7BWFnDqN`
+- **Afdian:** [https://ifdian.net/a/wenfxl](https://ifdian.net/a/wenfxl)
+- **USDT (TRX/Tron/TRC20):** `TLMNmyfUajfGSBhUfJ1orqxpvv7BWFnDqN`
+- **USDT (BSC/BNB Smart Chain/BEP20):** `0x2da26c472097f269217390e44ff00c7d087699a6`
 
 ## Web Console Preview
 
@@ -237,13 +246,21 @@ services:
     volumes:
       - ./data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - .:${PWD}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=openai-cpa"
+
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 86400 --cleanup
+    command: --label-enable --scope openai-cpa --interval 86400 --cleanup
+
+
 
 ```
 
@@ -261,13 +278,21 @@ services:
     ports:
       - "8000:8000"
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - .:${PWD}
     environment:
+      - HOST_PROJECT_PATH=${PWD}
       - TZ=Asia/Shanghai
       - DB_TYPE=mysql
-      - DB_HOST=MySQL IP
+      - DB_HOST=你的云端MySQL地址
       - DB_PORT=3306
       - DB_USER=root
-      - DB_PASS=password
+      - DB_PASS=你的数据库密码
       - DB_NAME=wenfxl_manager
 ```
 
@@ -476,6 +501,16 @@ Check the following:
 - Prefer stronger secret handling for mailbox admin credentials, CPA tokens, and Clash controller secrets.
 - Restrict access to the output directory.
 - If used in a team environment, add audit logging and permission boundaries.
+
+## Contributors
+
+Thanks to all the developers who have contributed to this project:
+
+<a href="https://github.com/kamill7779"><img src="https://wsrv.nl/?url=github.com/kamill7779.png&mask=circle" width="80" title="kamill7779" alt="kamill7779"></a>
+<a href="https://github.com/s12ryt"><img src="https://wsrv.nl/?url=github.com/s12ryt.png&mask=circle" width="80" title="s12ryt" alt="s12ryt"></a>
+<a href="https://github.com/SYFATP"><img src="https://wsrv.nl/?url=github.com/SYFATP.png&mask=circle" width="80" title="SYFATP" alt="SYFATP"></a>
+<a href="https://github.com/YuHaiA"><img src="https://wsrv.nl/?url=github.com/YuHaiA.png&mask=circle" width="80" title="YuHaiA" alt="YuHaiA"></a>
+<a href="https://github.com/haocenchen-debug"><img src="https://wsrv.nl/?url=github.com/haocenchen-debug.png&mask=circle" width="80" title="haocenchen-debug" alt="haocenchen-debug"></a>
 
 ## Terms of Use & License
 

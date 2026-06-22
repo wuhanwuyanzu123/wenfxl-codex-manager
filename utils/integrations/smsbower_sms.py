@@ -1,12 +1,14 @@
 import os
 import time
 import random
+import datetime
 import threading
+import concurrent.futures
 from typing import Any, Dict, List, Optional
 from curl_cffi import requests
 from utils import db_manager
 from utils import config as cfg
-
+from utils.auth_core import generate_payload
 
 class UserStoppedError(Exception): pass
 
@@ -28,13 +30,6 @@ def _sleep_interruptible(sec: float) -> bool:
             return True
         time.sleep(0.1)
     return False
-
-def _build_sentinel_for_session(session, flow: str, proxies: Any) -> str:
-    try:
-        from utils.sentinel import get_token
-        return get_token(session, flow, proxies) or ""
-    except Exception:
-        return ""
 
 def _post_with_retry(session, url: str, headers: dict = None, json_body: dict = None, proxies: Any = None,
                      timeout: int = 30, retries: int = 1):
@@ -121,7 +116,8 @@ _SMSBOWER_PRICE_CACHE_LOCK = threading.Lock()
 _SMSBOWER_PRICE_CACHE: dict[str, Any] = {"service": "", "updated_at": 0.0, "items": []}
 _SMSBOWER_COUNTRY_NAME_CACHE: Dict[int, str] = {}
 _SMSBOWER_COUNTRY_NAMES_MAP: dict[int, str] = {}
-
+_SMSBOWER_STATS_CACHE: dict[int, dict] = {}
+_SMSBOWER_WEB_COUNTRY_MAP: dict[str, int] = {}
 _OPENAI_SMS_BLOCKED_COUNTRY_IDS = {0, 3, 14, 20, 51, 57, 110, 113, 191}
 
 def _load_reuse_state_from_db():
@@ -136,6 +132,72 @@ _load_reuse_state_from_db()
 def _sync_reuse_to_db():
     db_manager.set_sys_kv("smsbower_reuse_data", _SMSBOWER_REUSE_STATE)
 
+
+def _get_web_country_mapping(proxies: Any) -> dict[str, int]:
+    global _SMSBOWER_WEB_COUNTRY_MAP
+    if _SMSBOWER_WEB_COUNTRY_MAP: return _SMSBOWER_WEB_COUNTRY_MAP
+
+    cookie = str(getattr(cfg, 'SMSBOWER_WEB_COOKIE', '')).strip()
+    if not cookie: return {}
+
+    try:
+        _info("正在获取 SmsBower 内部国家 ID 映射字典...")
+        resp = requests.get("https://smsbower.app/countries/getList",
+                            headers={"cookie": cookie, "accept": "application/json"}, proxies=proxies,
+                            impersonate="chrome", timeout=15)
+        if resp.status_code == 200:
+            for item in resp.json():
+                api_code = str(item.get("activate_org_code"))
+                web_id = item.get("id")
+                if api_code and api_code != "None" and web_id is not None:
+                    _SMSBOWER_WEB_COUNTRY_MAP[api_code] = int(web_id)
+    except Exception as e:
+        _warn(f"获取内部国家字典失败: {e}")
+    return _SMSBOWER_WEB_COUNTRY_MAP
+
+
+def _get_provider_stats_for_country(country_id: int, proxies: Any) -> dict[str, float]:
+    cookie = str(getattr(cfg, 'SMSBOWER_WEB_COOKIE', '')).strip()
+    if not cookie: return {}
+
+    now = time.time()
+    cached = _SMSBOWER_STATS_CACHE.get(country_id)
+    if cached and (now - cached["updated_at"]) < 900:
+        return cached["stats"]
+
+    mapping = _get_web_country_mapping(proxies)
+    web_id = mapping.get(str(country_id))
+    if not web_id: return {}
+
+    dt_now = datetime.datetime.utcnow()
+    dt_from = dt_now - datetime.timedelta(days=2)
+
+    params = {
+        "dateFrom": dt_from.strftime("%Y-%m-%d %H:%M"),
+        "dateTo": dt_now.strftime("%Y-%m-%d %H:%M"),
+        "serviceId": 247,
+        "countryId": web_id,
+        "perPage": 50,
+        "page": 1,
+        "sortBy": "",
+        "sortDir": "desc",
+        "optimizeAggregates": "false"
+    }
+    stats = {}
+    try:
+        resp = requests.get("https://smsbower.app/cabinet/client/providerstatistic/getList", params=params,
+                            headers={"cookie": cookie, "accept": "application/json"}, proxies=proxies,
+                            impersonate="chrome", timeout=15)
+        if resp.status_code == 200:
+            for item in resp.json():
+                agent_id = str(item.get("agent_id", ""))
+                delivery = float(item.get("delivery", 0.0))
+                if agent_id: stats[agent_id] = delivery
+    except Exception:
+        pass
+
+    _SMSBOWER_STATS_CACHE[country_id] = {"updated_at": now, "stats": stats}
+    return stats
 
 def _smsbower_reuse_get(service: str, country: int) -> tuple[str, str, int]:
     now = time.time()
@@ -268,6 +330,8 @@ def _smsbower_country_score(country_id: int, *, cost: float, count: int, preferr
 def _smsbower_request(action: str, *, proxies: Any, params: Optional[Dict[str, Any]] = None, timeout: int = 25) -> \
 tuple[bool, str, Any]:
     key = _smsbower_api_key()
+    if not getattr(cfg, "SMSBOWER_USE_PROXY", False):
+        proxies = None
     if not key: return False, "NO_KEY", None
     query: Dict[str, Any] = {"action": str(action or "").strip(), "api_key": key}
     if params:
@@ -320,8 +384,10 @@ def _smsbower_update_runtime(*, spent_delta: float = 0.0, balance: Optional[floa
 
 def _smsbower_resolve_service_code(proxies: Any) -> str:
     raw = str(getattr(cfg, 'SMSBOWER_SERVICE', 'dr')).strip()
-    if raw.lower() in {"openai", "chatgpt", "auto"}: return "dr"
-    return raw
+    selected = raw if raw else "dr"
+
+    _info(f"SmsBower 使用手动填写的服务代码: {selected}")
+    return selected
 
 
 def _smsbower_resolve_country_id(proxies: Any) -> int:
@@ -365,37 +431,97 @@ def _smsbower_prices_by_service(service_code: str, proxies: Any, *, force_refres
             return [dict(x) for x in _SMSBOWER_PRICE_CACHE.get("items", [])]
 
     name_map = _get_country_names_map(proxies)
+    ok, text, data = _smsbower_request("getPricesV3", proxies=proxies, params={"service": svc})
 
-    ok, text, data = _smsbower_request("getPrices", proxies=proxies, params={"service": svc})
-    rows = []
-    if ok and isinstance(data, dict):
-        for cid, entry in data.items():
-            if not str(cid).isdigit() or int(cid) in _OPENAI_SMS_BLOCKED_COUNTRY_IDS:
-                continue
-            target = entry.get(svc) if svc in entry else entry
-            if isinstance(target, dict) and "cost" in target:
-                try:
-                    c_id = int(cid)
-                    c_cost = float(target.get("cost", -1))
-                    c_count = int(target.get("count", 0))
+    if not ok or not isinstance(data, dict):
+        return []
 
-                    if c_count > 0:
-                        rows.append({
+    country_groups = {}
+
+    for cid, entry in data.items():
+        if not str(cid).isdigit() or int(cid) in _OPENAI_SMS_BLOCKED_COUNTRY_IDS:
+            continue
+
+        providers = entry.get(svc)
+        if not isinstance(providers, dict):
+            continue
+
+        for pid, info in providers.items():
+            try:
+                c_id = int(cid)
+                c_cost = float(info.get("price", -1))
+                c_count = int(info.get("count", 0))
+
+                if c_count > 0:
+                    if c_id not in country_groups:
+                        country_groups[c_id] = {
                             "country": c_id,
-                            "name": name_map.get(c_id, f"未知国家({c_id})"),
-                            "cost": c_cost,
-                            "count": c_count
-                        })
-                except:
-                    continue
+                            "name": name_map.get(c_id, f"国家{c_id}"),
+                            "total_count": 0,
+                            "routes": []
+                        }
+                    country_groups[c_id]["routes"].append({
+                        "provider": str(pid),
+                        "cost": c_cost,
+                        "count": c_count,
+                        "delivery": -1.0
+                    })
+                    country_groups[c_id]["total_count"] += c_count
+            except:
+                continue
+
+    rows = list(country_groups.values())
+    has_cookie = bool(str(getattr(cfg, 'SMSBOWER_WEB_COOKIE', '')).strip())
+
+    if has_cookie and rows:
+        _info(f"开启并发模式：正在极速获取 {len(rows)} 个国家的真实成功率...")
+        _get_web_country_mapping(proxies)
+
+        all_stats = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=12) as executor:
+            future_to_cid = {executor.submit(_get_provider_stats_for_country, r["country"], proxies): r["country"] for r
+                             in rows}
+            for future in concurrent.futures.as_completed(future_to_cid):
+                cid = future_to_cid[future]
+                try:
+                    all_stats[cid] = future.result()
+                except Exception:
+                    all_stats[cid] = {}
+
+        for r in rows:
+            c_id = r["country"]
+            stats = all_stats.get(c_id, {})
+
+            for route in r["routes"]:
+                pid = route["provider"]
+                if pid in stats:
+                    route["delivery"] = stats[pid]
+
+            r["routes"].sort(key=lambda x: (-x.get("delivery", -1.0), x["cost"], -x["count"]))
+
+            if r["routes"]:
+                best_route = r["routes"][0]
+                r["cost"] = best_route["cost"]
+                r["provider"] = best_route["provider"]
+                r["delivery"] = best_route.get("delivery", -1.0)
+                r["count"] = best_route["count"]
+
+    elif rows:
+        for r in rows:
+            r["routes"].sort(key=lambda x: (x["cost"], -x["count"]))
+            if r["routes"]:
+                best_route = r["routes"][0]
+                r["cost"] = best_route["cost"]
+                r["provider"] = best_route["provider"]
+                r["delivery"] = -1.0
+                r["count"] = best_route["count"]
 
     if rows:
-        rows.sort(key=lambda x: (x.get("cost", 999), -x.get("count", 0)))
+        rows.sort(key=lambda x: (-x.get("delivery", -1.0), x["cost"], -x["count"]))
         with _SMSBOWER_PRICE_CACHE_LOCK:
             _SMSBOWER_PRICE_CACHE.update({"service": svc, "updated_at": now, "items": rows})
 
     return rows
-
 
 def _smsbower_pick_country_id(proxies: Any, *, service_code: str, preferred_country: int,
                               exclude_country_ids: Optional[set[int]] = None, force_refresh: bool = False) -> int:
@@ -425,16 +551,21 @@ def _smsbower_set_status(activation_id: str, status: int, proxies: Any) -> str:
 def _smsbower_get_number(proxies: Any, *, service_code: str, country_id: int) -> tuple[str, str, str, str]:
     if country_id in _OPENAI_SMS_BLOCKED_COUNTRY_IDS:
         return "", "", f"COUNTRY_BLOCKED: 国家ID {country_id} 被拉黑", ""
-
+    operator_id = str(getattr(cfg, 'SMSBOWER_OPERATOR', '')).strip()
     limit_max = _smsbower_order_max_price()
     limit_min = _smsbower_order_min_price()
     if limit_max > 0 or limit_min > 0:
         rows = _smsbower_prices_by_service(service_code, proxies)
         actual_cost = -1.0
         for r in rows:
-            if r.get("country") == country_id:
+            if operator_id:
+                for route in r.get("routes", []):
+                    if str(route.get("provider")) == operator_id:
+                        actual_cost = float(route.get("cost", -1.0))
+                        break
+            else:
                 actual_cost = float(r.get("cost", -1.0))
-                break
+            break
 
         if actual_cost > 0:
             if limit_max > 0 and actual_cost > limit_max:
@@ -443,9 +574,12 @@ def _smsbower_get_number(proxies: Any, *, service_code: str, country_id: int) ->
                 return "", "", f"价格拦截: 该国当前价格 ({actual_cost}$) 低于您的最低限价 ({limit_min}$)", ""
 
     params = {"service": service_code, "country": country_id}
+    operator_id = str(getattr(cfg, 'SMSBOWER_OPERATOR', '')).strip()
+    if operator_id:
+        params["providerIds"] = operator_id
     if _smsbower_order_max_price() > 0: params["maxPrice"] = _smsbower_order_max_price()
     if _smsbower_order_min_price() > 0: params["minPrice"] = _smsbower_order_min_price()
-    ok, text, data = _smsbower_request("getNumberV2", proxies=proxies, params=params, timeout=30)
+    ok, text, data = _smsbower_request("getNumberV2", proxies=proxies, params=params, timeout=50)
 
     if ok and isinstance(data, dict):
         aid = str(data.get("activationId", ""))
@@ -465,8 +599,9 @@ def _smsbower_get_number(proxies: Any, *, service_code: str, country_id: int) ->
     return "", "", text or str(data) or "NO_NUMBERS", ""
 
 
-def _smsbower_poll_code(activation_id: str, proxies: Any) -> str:
-    timeout_sec, started_at = _smsbower_poll_timeout_sec(), time.time()
+def _smsbower_poll_code(activation_id: str, proxies: Any, timeout_override: int = 0) -> str:
+    timeout_sec = timeout_override if timeout_override > 0 else _smsbower_poll_timeout_sec()
+    started_at = time.time()
     _info(f"⏳ 开始等待 SmsBower 短信验证码 (最大等待 {timeout_sec} 秒)...")
     last_print_time = time.time()
 
@@ -493,21 +628,21 @@ def _smsbower_poll_code(activation_id: str, proxies: Any) -> str:
     return ""
 
 
-def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hint_url: str = "") -> tuple[bool, str]:
+def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hint_url: str = "", device_id: str = "", user_agent: str = "", run_ctx: dict = None, proxy: Optional[str] = None) -> tuple[bool, str]:
     if not _smsbower_enabled():
         return False, "SmsBower 未开启或未配置 API Key"
 
     max_tries, last_reason, lock_acquired = _smsbower_max_tries(), "SmsBower 验证失败", False
     verify_balance_start = -1.0
 
-    started = time.time()
-    while True:
-        _raise_if_stopped()
-        if _SMSBOWER_VERIFY_LOCK.acquire(timeout=0.5):
-            lock_acquired = True
-            break
-        if time.time() - started >= 180:
-            return False, "SmsBower 手机验证排队超时"
+    # started = time.time()
+    # while True:
+    #     _raise_if_stopped()
+    #     if _SMSBOWER_VERIFY_LOCK.acquire(timeout=0.5):
+    #         lock_acquired = True
+    #         break
+    #     if time.time() - started >= 180:
+    #         return False, "SmsBower 手机验证排队超时"
 
     def _verify_once(activation_id: str, phone_number: str, *, source: str, close_on_success: bool,
                      cancel_on_fail: bool) -> tuple[bool, str, str]:
@@ -515,7 +650,16 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
         try:
             send_hdrs = {"referer": "https://auth.openai.com/add-phone", "accept": "application/json",
                          "content-type": "application/json"}
-            send_sentinel = _build_sentinel_for_session(session, "authorize_continue", proxies)
+
+            send_sentinel = generate_payload(
+                did=device_id,
+                flow="authorize_continue",
+                proxy=proxy,
+                user_agent=user_agent,
+                impersonate="chrome",
+                ctx=run_ctx
+            )
+
             if send_sentinel: send_hdrs["openai-sentinel-token"] = send_sentinel
 
             if _smsbower_mark_ready_enabled(): _smsbower_set_status(activation_id, 1, proxies)
@@ -525,16 +669,48 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
                                          headers=send_hdrs, json_body={"phone_number": phone_number}, proxies=proxies)
             if send_resp.status_code != 200:
                 fail_reason = f"发送失败 HTTP {send_resp.status_code}"
-                _warn(f"[{source}] ❌ 号码提交被 OpenAI 拦截: {fail_reason}")
+                _warn(f"[{source}] ❌ {phone_number} 号码提交被 OpenAI 拦截: {fail_reason}")
                 return False, "", fail_reason
 
-            _info(f"[{source}] ✅ OpenAI 接受了号码，开始轮询验证码...")
-            sms_code = _smsbower_poll_code(activation_id, proxies)
+            _info(f"[{source}] ✅ OpenAI 接受了号码{phone_number}，开始轮询验证码...")
+            sms_code = _smsbower_poll_code(activation_id, proxies, timeout_override=30)
+            if not sms_code:
+                _warn(f"[{source}] ⚠ {phone_number} 未收到验证码，直接触发重发机制...")
+                _sleep_interruptible(1.0)
+
+                send_sentinel_2 = generate_payload(
+                    did=device_id, flow="authorize_continue", proxy=proxy,
+                    user_agent=user_agent, impersonate="chrome", ctx=run_ctx
+                )
+                if send_sentinel_2: send_hdrs["openai-sentinel-token"] = send_sentinel_2
+
+                _info(f"[{source}] (重发) 正在向 OpenAI 再次提交号码 {phone_number}...")
+                send_resp_2 = _post_with_retry(session, "https://auth.openai.com/api/accounts/add-phone/send",
+                                               headers=send_hdrs, json_body={"phone_number": phone_number},
+                                               proxies=proxies)
+                if send_resp_2.status_code != 200:
+                    fail_reason = f"重发失败 HTTP {send_resp_2.status_code}"
+                    _warn(f"[{source}] ❌ 重发提交被 OpenAI 拦截: {fail_reason}")
+                    return False, "", fail_reason
+
+                _info(f"[{source}] ✅ {phone_number} 已重新请求发送，开始轮询验证码 (等待最大超时)...")
+                sms_code = _smsbower_poll_code(activation_id, proxies, timeout_override=0)
+
             if not sms_code:
                 return False, "", "接码超时"
 
             verify_hdrs = {"referer": "https://auth.openai.com/phone-verification", "accept": "application/json",
                            "content-type": "application/json"}
+
+            send_sentinel = generate_payload(
+                did=device_id,
+                flow="authorize_continue",
+                proxy=proxy,
+                user_agent=user_agent,
+                impersonate="chrome",
+                ctx=run_ctx
+            )
+
             if send_sentinel: verify_hdrs["openai-sentinel-token"] = send_sentinel
 
             verify_resp = _post_with_retry(session, "https://auth.openai.com/api/accounts/phone-otp/validate",
@@ -543,7 +719,7 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
                 _warn(f"[{source}] ❌ 验证码校验失败 HTTP {verify_resp.status_code}")
                 return False, "", f"校验失败 HTTP {verify_resp.status_code}"
 
-            _info(f"[{source}] 🎊 验证码在 OpenAI 侧核验通过！")
+            _info(f"[{source}] 🎊 {phone_number} 验证码在 OpenAI 侧核验通过！")
             if close_on_success:
                 _smsbower_set_status(activation_id, 6, proxies)
             else:
@@ -576,7 +752,7 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
             if rid and rphone:
                 _info(f"♻️ 尝试复用旧号码: {rphone} (已使用 {rused} 次)")
                 ok_r, next_r, reason_r = _verify_once(rid, rphone, source="复用号码", close_on_success=False,
-                                                      cancel_on_fail=False)
+                                                      cancel_on_fail=True)
                 if ok_r:
                     _smsbower_country_mark_success(country_id)
                     _smsbower_country_record_result(country_id, True)
@@ -587,7 +763,7 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
                     if _smsbower_country_mark_timeout(country_id):
                         country_id = _smsbower_pick_country_id(proxies, service_code=service_code,
                                                                preferred_country=pref_country)
-                _smsbower_set_status(rid, 8, proxies)
+                # _smsbower_set_status(rid, 8, proxies)
                 _smsbower_reuse_clear()
 
         for attempt in range(1, max_tries + 1):
@@ -610,12 +786,13 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
             cost_display = f"{cost} $" if cost and cost != "未知" else "未知"
             _info(f"📱 成功取到新号码: {phone} (订单ID: {aid} | 扣费: {cost_display})")
             ok_n, next_n, reason_n = _verify_once(aid, phone, source=f"新号#{attempt}", close_on_success=not reuse_on,
-                                                  cancel_on_fail=not reuse_on)
+                                                  cancel_on_fail=True)
             if ok_n:
                 _smsbower_country_mark_success(country_id)
                 _smsbower_country_record_result(country_id, True)
                 if reuse_on:
                     _smsbower_reuse_set(aid, phone, service_code, country_id)
+                    _info(f"📥 验证成功！号码 {phone} 已挂起并存入复用池。")
                 return True, next_n
 
             last_reason = reason_n
@@ -625,12 +802,12 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
                     _smsbower_set_status(aid, 8, proxies)
                     country_id = _smsbower_pick_country_id(proxies, service_code=service_code,
                                                            preferred_country=pref_country)
-                else:
-                    _smsbower_reuse_set(aid, phone, service_code, country_id)
-                    _smsbower_set_status(aid, 3, proxies)
-                    _warn("⚠️ 新购号码接码超时，已保留该号码供下一次复用。")
-                    return False, "接码超时，保留复用"
-            if reuse_on: _smsbower_set_status(aid, 8, proxies)
+                # else:
+                #     _smsbower_reuse_set(aid, phone, service_code, country_id)
+                #     _smsbower_set_status(aid, 3, proxies)
+                #     _warn("⚠️ 新购号码接码超时，已保留该号码供下一次复用。")
+                #     return False, "接码超时，保留复用"
+            # if reuse_on: _smsbower_set_status(aid, 8, proxies)
             _sleep_interruptible(1.5)
 
         return False, last_reason
@@ -641,6 +818,35 @@ def try_verify_phone_via_smsbower(session: requests.Session, *, proxies: Any, hi
                 _smsbower_update_runtime(spent_delta=max(0, verify_balance_start - b_end), balance=b_end)
         except:
             pass
-        if lock_acquired: _SMSBOWER_VERIFY_LOCK.release()
-def handle_smsbower_verification(session, proxies, hint_url=""):
-    return try_verify_phone_via_smsbower(session, proxies=proxies, hint_url=hint_url)
+        # if lock_acquired: _SMSBOWER_VERIFY_LOCK.release()
+
+def get_phone_for_signup(proxies: Any) -> tuple[str, str, int, str]:
+    if not _smsbower_enabled():
+        return "", "", 0, "SmsBower 未开启或未配置 API Key"
+    service_code = _smsbower_resolve_service_code(proxies)
+    pref_country = _smsbower_resolve_country_id(proxies)
+    country_id = _smsbower_pick_country_id(proxies, service_code=service_code, preferred_country=pref_country)
+    _info(f"SmsBower 国家分配: 目标国家ID为 {country_id} (服务代码: {service_code})")
+    aid, phone, gerr, cost = _smsbower_get_number(proxies, service_code=service_code, country_id=country_id)
+    if aid:
+        cost_display = f"{cost} $" if cost and cost != "未知" else "未知"
+        _info(f"📱 成功取到新号码: (用于首发注册): {phone} (订单ID: {aid} | 扣费: {cost_display})")
+        return aid, phone, country_id, ""
+    return "", "", 0, gerr
+
+
+def wait_code_for_signup(activation_id: str, proxies: Any) -> str:
+    return _smsbower_poll_code(activation_id, proxies, timeout_override=0)
+
+def report_signup_result(activation_id: str, country_id: int, success: bool, reason: str, proxies: Any) -> None:
+    _smsbower_country_record_result(country_id, success, reason)
+    if success:
+        _smsbower_country_mark_success(country_id)
+        _smsbower_set_status(activation_id, 6, proxies)
+    else:
+        if "超时" in reason or "fraud_guard" in reason:
+            _smsbower_country_mark_timeout(country_id)
+        _smsbower_set_status(activation_id, 8, proxies)
+
+def handle_smsbower_verification(session, proxies, hint_url="", device_id: str = "", user_agent: str = "", run_ctx: dict = None, proxy: Optional[str] = None):
+    return try_verify_phone_via_smsbower(session, proxies=proxies, hint_url=hint_url, device_id=device_id, user_agent=user_agent, run_ctx=run_ctx, proxy=proxy)

@@ -1,20 +1,28 @@
 import os
 import re
 import time
+import json
 from utils.email_providers.gmail_oauth_handler import GmailOAuthHandler
 from utils import config as cfg
 
 
 def get_gmail_otp_via_oauth(target_email, proxy=None):
-    config_dir = os.path.dirname(cfg.CONFIG_PATH)
-    client_secrets = os.path.join(config_dir, "credentials.json")
-    token_path = os.path.join(config_dir, "token.json")
+    from utils import db_manager
+    creds_json = db_manager.get_sys_kv('gmail_credentials_json')
+    token_json = db_manager.get_sys_kv('gmail_token_json')
+
+    if not creds_json or not token_json:
+        print(f"[{cfg.ts()}] [Gmail] 数据库中缺少凭据或Token，无法提取验证码")
+        return None
 
     handler = GmailOAuthHandler()
-    service = handler.get_service(client_secrets, token_path, proxy=proxy)
+    service, updated_token = handler.get_service(json.loads(creds_json), token_json, proxy=proxy)
 
     if not service:
         return None
+
+    if updated_token:
+        db_manager.set_sys_kv('gmail_token_json', updated_token)
 
     emails = handler.fetch_and_mark_read(service, target_email, search_query="is:unread")
     if not emails:

@@ -30,9 +30,9 @@ class GmailOAuthHandler:
         os.environ.pop('https_proxy', None)
 
     @staticmethod
-    def get_authorization_url(client_secrets_path):
-        flow = Flow.from_client_secrets_file(
-            client_secrets_path,
+    def get_authorization_url(client_config):
+        flow = Flow.from_client_config(
+            client_config,  # 直接传字典
             scopes=GmailOAuthHandler.SCOPES,
             redirect_uri='http://localhost'
         )
@@ -41,43 +41,40 @@ class GmailOAuthHandler:
         return auth_url, flow.code_verifier
 
     @staticmethod
-    def save_token_from_code(client_secrets_path, code, token_save_path, code_verifier=None, proxy=None):
+    def save_token_from_code(client_config, code, token_save_path, code_verifier=None, proxy=None):
         GmailOAuthHandler._set_proxy(proxy)
         try:
-            flow = Flow.from_client_secrets_file(
-                client_secrets_path,
+            flow = Flow.from_client_config(
+                client_config,
                 scopes=GmailOAuthHandler.SCOPES,
                 redirect_uri='http://localhost'
             )
             flow.fetch_token(code=code, code_verifier=code_verifier)
 
             creds = flow.credentials
-            with open(token_save_path, 'w') as f:
-                f.write(creds.to_json())
-            return True, "授权成功"
+            return True, creds.to_json()
         except Exception as e:
             return False, f"授权失败: {str(e)}"
         finally:
             GmailOAuthHandler._clear_proxy()
 
     @staticmethod
-    def get_service(client_secrets_path, token_path, proxy=None):
-        if not os.path.exists(token_path):
-            return None
+    def get_service(client_config_dict, token_json_str, proxy=None):
+        if not token_json_str:
+            return None, None
 
         proxy_url = proxy
         if isinstance(proxy, dict):
             proxy_url = proxy.get('https') or proxy.get('http')
-
         GmailOAuthHandler._set_proxy(proxy_url)
-
         try:
-            creds = Credentials.from_authorized_user_file(token_path, GmailOAuthHandler.SCOPES)
+            creds_info = json.loads(token_json_str)
+            creds = Credentials.from_authorized_user_info(creds_info, GmailOAuthHandler.SCOPES)
 
+            new_token_str = None
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
-                with open(token_path, 'w') as f:
-                    f.write(creds.to_json())
+                new_token_str = creds.to_json()
 
             custom_http = None
             if proxy_url and isinstance(proxy_url, str):
@@ -92,22 +89,25 @@ class GmailOAuthHandler:
                     proxy_user=parsed.username,
                     proxy_pass=parsed.password
                 )
-                custom_http = httplib2.Http(proxy_info=proxy_info, timeout=15)
+                custom_http = httplib2.Http(proxy_info=proxy_info, timeout=60)
 
             if custom_http:
                 try:
                     import google_auth_httplib2
                     authorized_http = google_auth_httplib2.AuthorizedHttp(creds, http=custom_http)
-                    return build('gmail', 'v1', http=authorized_http, static_discovery=False)
+                    service = build('gmail', 'v1', http=authorized_http, static_discovery=False)
+                    return service, new_token_str
                 except ImportError:
-                    return build('gmail', 'v1', credentials=creds, static_discovery=False)
+                    service = build('gmail', 'v1', credentials=creds, static_discovery=False)
+                    return service, new_token_str
             else:
-                return build('gmail', 'v1', credentials=creds, static_discovery=False)
+                service = build('gmail', 'v1', credentials=creds, static_discovery=False)
+                return service, new_token_str
 
         except Exception as e:
             from utils import config as cfg
             print(f"[{cfg.ts()}] [ERROR] Gmail 服务启动失败: {e}")
-            return None
+            return None, None
         finally:
             GmailOAuthHandler._clear_proxy()
 

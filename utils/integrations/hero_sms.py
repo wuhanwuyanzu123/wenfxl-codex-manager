@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from curl_cffi import requests
 from utils import db_manager
 from utils import config as cfg
+from utils.auth_core import generate_payload
 
 class UserStoppedError(Exception): pass
 def _ssl_verify() -> bool: return True
@@ -26,13 +27,6 @@ def _sleep_interruptible(sec: float) -> bool:
             return True
         time.sleep(0.1)
     return False
-
-def _build_sentinel_for_session(session, flow: str, proxies: Any) -> str:
-    try:
-        from utils.sentinel import get_token
-        return get_token(session, flow, proxies) or ""
-    except Exception:
-        return ""
 
 def _post_with_retry(session, url: str, headers: dict = None, json_body: dict = None, proxies: Any = None,
                      timeout: int = 30, retries: int = 1):
@@ -616,6 +610,8 @@ def _hero_sms_request(
         params: Optional[Dict[str, Any]] = None,
         timeout: int = 25,
 ) -> tuple[bool, str, Any]:
+    if not getattr(cfg, "HERO_SMS_USE_PROXY", False):
+        proxies = None
     key = _hero_sms_api_key()
     if not key:
         return False, "NO_KEY", None
@@ -697,49 +693,10 @@ def hero_sms_get_balance(proxies: Any = None) -> tuple[float, str]:
     return -1.0, line or "无法解析余额"
 
 def _hero_sms_resolve_service_code(proxies: Any) -> str:
-    global _HERO_SMS_SERVICE_CACHE
+    raw = str(getattr(cfg, 'HERO_SMS_SERVICE', 'dr')).strip()
+    selected = raw if raw else "dr"
 
-    raw = str(cfg.HERO_SMS_SERVICE).strip()
-    if raw and raw.lower() not in {"auto", "openai", "chatgpt", "gpt", "codex"}:
-        return raw
-    if _HERO_SMS_SERVICE_CACHE:
-        return _HERO_SMS_SERVICE_CACHE
-
-    ok, _, data = _hero_sms_request(
-        "getServicesList",
-        proxies=proxies,
-        params={"lang": "en"},
-        timeout=30,
-    )
-    services: List[Dict[str, Any]] = []
-    if ok and isinstance(data, dict):
-        if isinstance(data.get("services"), list):
-            services = [x for x in data.get("services") if isinstance(x, dict)]
-        elif isinstance(data.get("data"), list):
-            services = [x for x in data.get("data") if isinstance(x, dict)]
-
-    selected = ""
-    for item in services:
-        code = str(item.get("code") or item.get("id") or "").strip()
-        name = str(item.get("name") or item.get("title") or item.get("eng") or "").strip()
-        low = f"{code} {name}".lower()
-        if "openai" in low:
-            selected = code
-            break
-    if not selected:
-        for item in services:
-            code = str(item.get("code") or item.get("id") or "").strip()
-            name = str(item.get("name") or item.get("title") or item.get("eng") or "").strip()
-            low = f"{code} {name}".lower()
-            if any(k in low for k in ("chatgpt", "codex", "gpt")):
-                selected = code
-                break
-
-    if not selected:
-        selected = "dr"
-
-    _HERO_SMS_SERVICE_CACHE = selected
-    _info(f"HeroSMS 服务代码: {selected}")
+    _info(f"HeroSMS 使用手动填写的服务代码: {selected}")
     return selected
 
 
@@ -1012,6 +969,10 @@ def _try_verify_phone_via_hero_sms(
         *,
         proxies: Any,
         hint_url: str = "",
+        device_id: str = "",
+        user_agent: str = "",
+        run_ctx: dict = None,
+        proxy: Optional[str] = None,
 ) -> tuple[bool, str]:
     if not _hero_sms_enabled():
         return False, "HeroSMS 未配置 API Key 或HeroSMS主开关未开启，如果不想花钱接码请忽略该条提示"
@@ -1020,20 +981,20 @@ def _try_verify_phone_via_hero_sms(
     last_reason = "HeroSMS 手机验证失败"
     lock_acquired = False
 
-    serial_on = True
-    wait_sec = 180
+    # serial_on = True
+    # wait_sec = 180
     verify_balance_start = -1.0
 
-    if serial_on:
-        _info("等待 HeroSMS 手机验证锁...")
-        started = time.time()
-        while True:
-            _raise_if_stopped()
-            if _HERO_SMS_VERIFY_LOCK.acquire(timeout=0.5):
-                lock_acquired = True
-                break
-            if time.time() - started >= wait_sec:
-                return False, "HeroSMS 手机验证排队超时"
+    # if serial_on:
+    #     _info("等待 HeroSMS 手机验证锁...")
+    #     started = time.time()
+    #     while True:
+    #         _raise_if_stopped()
+    #         if _HERO_SMS_VERIFY_LOCK.acquire(timeout=0.5):
+    #             lock_acquired = True
+    #             break
+    #         if time.time() - started >= wait_sec:
+    #             return False, "HeroSMS 手机验证排队超时"
 
     def _verify_once(
             activation_id: str,
@@ -1051,7 +1012,16 @@ def _try_verify_phone_via_hero_sms(
                 "accept": "application/json",
                 "content-type": "application/json",
             }
-            send_sentinel = _build_sentinel_for_session(session, "authorize_continue", proxies)
+
+            send_sentinel = generate_payload(
+                did=device_id,
+                flow="authorize_continue",
+                proxy=proxy,
+                user_agent=user_agent,
+                impersonate="chrome110",
+                ctx=run_ctx
+            )
+
             if send_sentinel:
                 send_headers["openai-sentinel-token"] = send_sentinel
 
@@ -1098,7 +1068,15 @@ def _try_verify_phone_via_hero_sms(
                 "accept": "application/json",
                 "content-type": "application/json",
             }
-            verify_sentinel = _build_sentinel_for_session(session, "authorize_continue", proxies)
+            verify_sentinel = generate_payload(
+                did=device_id,
+                flow="authorize_continue",
+                proxy=proxy,
+                user_agent=user_agent,
+                impersonate="chrome110",
+                ctx=run_ctx
+            )
+
             if verify_sentinel:
                 verify_headers["openai-sentinel-token"] = verify_sentinel
 
@@ -1330,8 +1308,68 @@ def _try_verify_phone_via_hero_sms(
                 )
         except Exception:
             pass
-        if lock_acquired:
-            try:
-                _HERO_SMS_VERIFY_LOCK.release()
-            except Exception:
-                pass
+        # if lock_acquired:
+        #     try:
+        #         _HERO_SMS_VERIFY_LOCK.release()
+        #     except Exception:
+        #         pass
+
+def get_phone_for_signup(proxies: Any) -> tuple[str, str, int, str]:
+    if not _hero_sms_enabled():
+        return "", "", 0, "HeroSMS 未配置或未开启"
+
+    max_tries = _hero_sms_max_tries()
+    service_code = _hero_sms_resolve_service_code(proxies)
+    pref_country = _hero_sms_resolve_country_id(proxies)
+    excluded = set()
+    reuse_on = _hero_sms_reuse_enabled()
+
+    country_id = _hero_sms_pick_country_id(proxies, service_code=service_code, preferred_country=pref_country)
+    _info(f"HeroSMS 手机首发分配: 目标国家ID为 {country_id} (服务: {service_code})")
+    last_gerr = ""
+    for attempt in range(1, max_tries + 1):
+        if getattr(cfg, 'GLOBAL_STOP', False):
+            break
+
+        _info(f"[{attempt}/{max_tries}] 正在向 HeroSMS 请求首发全新号码 (国家: {country_id})...")
+        aid, phone, gerr = _hero_sms_get_number(proxies, service_code=service_code, country_id=country_id)
+
+        if aid:
+            _info(f"📱 成功取到全新号码 (用于首发注册): {phone} (订单: {aid})")
+            if reuse_on:
+                _hero_sms_reuse_set(aid, phone, service_code, country_id)
+            return aid, phone, country_id, ""
+
+        last_gerr = gerr
+        _warn(f"⚠️ 第 {attempt}/{max_tries} 次首发取号失败: {gerr}")
+
+        if _is_hero_sms_balance_issue(gerr):
+            _warn("❌ HeroSMS 余额不足，直接退出！")
+            break
+
+        if attempt < max_tries and _hero_sms_auto_pick_country() and _is_hero_sms_no_numbers_issue(gerr):
+            excluded.add(country_id)
+            country_id = _hero_sms_pick_country_id(
+                proxies, service_code=service_code, preferred_country=pref_country,
+                exclude_country_ids=excluded, force_refresh=True
+            )
+            _info(f"🔄 自动切换至备选国家 ID: {country_id}")
+
+        _sleep_interruptible(2.0)
+
+    return "", "", 0, last_gerr
+
+
+def wait_code_for_signup(activation_id: str, proxies: Any) -> str:
+    return _hero_sms_poll_code(activation_id, proxies)
+
+
+def report_signup_result(activation_id: str, country_id: int, success: bool, reason: str, proxies: Any) -> None:
+    _hero_sms_country_record_result(country_id, success, reason)
+    if success:
+        _hero_sms_country_mark_success(country_id)
+        _hero_sms_set_status(activation_id, 6, proxies)
+    else:
+        if _is_hero_sms_timeout_issue(reason) or "fraud_guard" in str(reason).lower():
+            _hero_sms_country_mark_timeout(country_id)
+        _hero_sms_set_status(activation_id, 8, proxies)

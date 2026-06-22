@@ -4,7 +4,7 @@
 # https://github.com/maillab/cloud-mail
 # https://github.com/s12ryt/mail-curl
 
-reg_mode: "protocol"
+reg_mode: "email"
 # 可选值: "imap" / "freemail" / "cloudflare_temp_email" / "cloudmail" / "mail_curl" / "luckmail"
 email_api_mode: "cloudflare_temp_email"
 
@@ -12,6 +12,19 @@ email_api_mode: "cloudflare_temp_email"
 # 你的域名 (支持逗号分隔多域名随机轮换) 如果只有一个域名就只填一个域名
 
 mail_domains: "domain1.com,domain2.xyz,domain3.net"
+disabled_mail_domains: []
+enable_mail_domain_runtime_control: false
+enable_mail_domain_grouping: false
+mail_domain_group_count: 2
+mail_domain_group_mode: "auto"
+mail_domain_group_strategy: "round_robin"
+mail_domain_groups: []
+mail_domain_pinpoint_burst_mode: false
+mail_domain_prefer_low_failure_mode: false
+mail_domain_failure_types:
+  - discarded_email
+mail_domain_fail_threshold: 3
+mail_domain_fail_cooldown_sec: 600
 
 #二级域名开关
 enable_sub_domains: false
@@ -38,6 +51,7 @@ admin_auth: ""
 # [项目专属内存池邮箱配置]
 openai_cpa:
   webhook_secret: "wenfxl_secret_key"
+  use_original_password_flow: false
 
 # [模式 "imap" 专属配置] (CF Catch-all 转发接收端)
 imap:
@@ -210,6 +224,8 @@ warp_proxy_list:
 
 # [验证码重发次数配置，默认5次]
 max_otp_retries: 5
+# 验证码轮询次数
+otp_poll_max_attempts: 20
 
 # [邮箱代理专项配置]
 # 【开关】true 表示获取邮箱（谷歌）也用代理，false 表示直连（推荐先试 false）如果是国外服务器此项可以保持false
@@ -255,6 +271,7 @@ cpa_mode:
   threads: 10
   #是否保存仅注册账号，用于后续手动登录或者其他作用
   retain_reg_only: false
+  auto_re_oauth: false
 
 # SUB2APIA配置 参数含义跟CPA相同
 sub2api_mode:
@@ -276,10 +293,18 @@ sub2api_mode:
   account_rate_multiplier: 1.0
   account_group_ids: ""
   enable_ws_mode: true
-  test_model: "gpt-5.2"
+  test_model: "gpt-5.4-mini"
   default_proxy: ""
   #是否保存仅注册账号，用于后续手动登录或者其他作用
   retain_reg_only: false
+  auto_re_oauth: false
+
+image2api_mode:
+  enable: false
+  api_url: ""
+  api_key: ""
+  retain_reg_only: false
+  img_only_mode: false
 
 hero_sms:
   enabled: false
@@ -296,6 +321,7 @@ hero_sms:
   max_tries: 3
   poll_timeout_sec: 120
   reuse_max: 2
+  use_proxy: false
 
 smsbower:
   enabled: false
@@ -311,6 +337,9 @@ smsbower:
   max_tries: 3
   poll_timeout_sec: 120
   reuse_max: 2
+  operator: ""
+  use_proxy: false
+  web_cookie: ""
 
 fivesim:
   enabled: false
@@ -326,6 +355,8 @@ fivesim:
   max_tries: 3
   poll_timeout_sec: 180
   reuse_max: 2
+  operator: ""
+  use_proxy: false
 
 # 常规量产模式专属配置
 normal_mode:
@@ -335,6 +366,8 @@ normal_mode:
   sleep_max: 30
   # 单次(每批)执行的注册总数
   target_count: 2
+  # 是否保存提取的 image2api 数据到本地库
+  save_img_to_local: false
 
 tg_bot:
   enable: false
@@ -353,6 +386,10 @@ database:
     password: ""
     db_name: "wenfxl_manager"
 
+team_mode:
+  enable: false
+  overspeed: false
+
 # WEB端密码
 web_password: admin
 #CF账号
@@ -360,6 +397,7 @@ cf_api_email:
 #CF KEY
 cf_api_key:
 max_log_lines: "500"
+cluster_upload_timeout_sec: "15"
 #集群总控
 cluster_node_name: "NODE-1"
 cluster_master_url: ""
