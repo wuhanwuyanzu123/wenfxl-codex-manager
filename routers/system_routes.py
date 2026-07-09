@@ -6,6 +6,7 @@ import asyncio
 import threading
 import sys
 import subprocess
+import shlex
 import httpx
 from typing import Optional, Any
 from fastapi import APIRouter, Depends, Query, Request, WebSocket, HTTPException
@@ -257,11 +258,16 @@ async def save_config(new_config: dict, token: str = Depends(verify_token)):
 @router.get("/api/system/check_update")
 async def check_update(current_version: str, token: str = Depends(verify_token)):
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        proxy_url = str(getattr(core_engine.cfg, 'DEFAULT_PROXY', '') or '').strip() or None
+        client_kwargs = {"timeout": 15.0}
+        if proxy_url:
+            client_kwargs["proxy"] = proxy_url
+
+        async with httpx.AsyncClient(**client_kwargs) as client:
             resp = await client.get("https://api.github.com/repos/wenfxl/openai-cpa/releases/latest",
                                     headers={"Accept": "application/vnd.github.v3+json"})
-            if resp.status_code != 200: return {"status": "error",
-                                                "message": f"无法获取更新数据 (GitHub API 返回 HTTP {resp.status_code})"}
+            if resp.status_code != 200:
+                return {"status": "error", "message": f"无法获取更新数据 (GitHub API 返回 HTTP {resp.status_code})"}
         data = resp.json()
         remote_version = data.get("tag_name", "")
 
@@ -276,6 +282,51 @@ async def check_update(current_version: str, token: str = Depends(verify_token))
                 "html_url": data.get("html_url", "")}
     except Exception as e:
         return {"status": "error", "message": f"检查更新发生未知异常: {str(e)}"}
+
+
+@router.post("/api/system/auto_update")
+def auto_update(token: str = Depends(verify_token)):
+    if os.path.exists("/.dockerenv"):
+        return execute_docker_update()
+    return execute_native_update()
+
+
+def execute_docker_update():
+    try:
+        project_path = os.getenv("HOST_PROJECT_PATH") or os.getcwd()
+        image_name = "wenfxl/wenfxl-codex-manager:latest"
+        compose_file = os.path.join(project_path, "docker-compose.server.yml")
+        if not os.path.exists(compose_file):
+            compose_file = os.path.join(project_path, "docker-compose.yml")
+
+        print(f"[{core_engine.ts()}] [UPDATE] Pulling image: {image_name}")
+        pull_result = subprocess.run(
+            ["docker", "pull", image_name],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if pull_result.returncode != 0:
+            detail = (pull_result.stderr or pull_result.stdout or "docker pull failed").strip()
+            return {"status": "error", "message": f"镜像拉取失败: {detail[-500:]}"}
+
+        update_cmd = (
+            f"cd {shlex.quote(project_path)} && "
+            f"nohup docker compose -f {shlex.quote(compose_file)} up -d --no-deps --force-recreate codex-web "
+            f"> /tmp/wenfxl_auto_update.log 2>&1 &"
+        )
+        print(f"[{core_engine.ts()}] [UPDATE] Restarting compose service from: {compose_file}")
+        subprocess.Popen(update_cmd, shell=True)
+        return {
+            "status": "success",
+            "message": f"更新任务已启动，正在使用 {os.path.basename(compose_file)} 重建服务，约 20 秒后刷新页面。",
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"更新失败: {str(e)}"}
+
+
+def execute_native_update():
+    return {"status": "error", "message": "13-custom 暂仅支持 Docker Compose 环境自动更新。"}
 
 @router.post("/api/logs/clear")
 async def clear_backend_logs(token: str = Depends(verify_token)):

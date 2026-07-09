@@ -832,6 +832,62 @@
                                     </p>
                                 </div>
 
+                                <div class="mt-6 p-5 md:p-6 bg-white rounded-2xl border border-indigo-100 shadow-sm">
+                                    <div class="flex flex-col gap-4">
+                                        <div>
+                                            <h4 class="text-sm font-black text-indigo-800 tracking-wide">Cloudflare 批量工具</h4>
+                                            <p class="text-xs text-slate-500 mt-1 font-medium">使用上面的 CF 账号和 Global API Key，对发信域名池执行托管、邮件路由、Worker 和 Catch-All 配置。</p>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <button @click="handleCFBatchHosting" :disabled="cfTools.isHosting" class="w-full py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                                                <span :class="{'animate-spin inline-block': cfTools.isHosting}">{{ cfTools.isHosting ? '↻' : '☁' }}</span>
+                                                <span>{{ cfTools.isHosting ? '获取中...' : '获取 NS / 添加托管' }}</span>
+                                            </button>
+                                            <button @click="handleCFEnableEmail" :disabled="cfTools.isEnablingEmail" class="w-full py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                                                <span :class="{'animate-spin inline-block': cfTools.isEnablingEmail}">{{ cfTools.isEnablingEmail ? '↻' : '✉' }}</span>
+                                                <span>{{ cfTools.isEnablingEmail ? '启用中...' : '启用邮件路由' }}</span>
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-end">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Worker 名称</label>
+                                                <input type="text" v-model="cfTools.workerName" placeholder="openai-cpa" class="w-full appearance-none bg-white border border-indigo-200 text-slate-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm text-sm font-mono">
+                                            </div>
+                                            <button @click="handleCFDeployWorker" :disabled="cfTools.isDeploying" class="px-5 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 active:scale-95 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50">
+                                                {{ cfTools.isDeploying ? '部署中...' : '部署 Worker' }}
+                                            </button>
+                                            <button @click="handleCFCatchAll" :disabled="cfTools.isSettingCatchAll" class="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-lg hover:bg-violet-700 active:scale-95 transition-all shadow-md shadow-violet-500/20 disabled:opacity-50">
+                                                {{ cfTools.isSettingCatchAll ? '配置中...' : '配置 Catch-All' }}
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                                            <div>
+                                                <label class="block text-xs font-bold text-rose-500 uppercase tracking-wider mb-2">删除 CF 托管域名</label>
+                                                <textarea v-model="cfTools.deleteDomains" rows="2" placeholder="每行或逗号分隔填写要删除的域名" class="w-full appearance-none bg-rose-50/50 border border-rose-200 text-slate-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-rose-500/20 shadow-sm text-sm font-mono"></textarea>
+                                            </div>
+                                            <button @click="handleCFDeleteHosting" :disabled="cfTools.isDeletingHosting" class="px-5 py-2.5 bg-white border-2 border-rose-200 text-rose-600 text-sm font-bold rounded-lg hover:bg-rose-50 active:scale-95 transition-all shadow-sm disabled:opacity-50">
+                                                {{ cfTools.isDeletingHosting ? '删除中...' : '删除托管' }}
+                                            </button>
+                                        </div>
+                                        <div v-if="cfTools.results.length > 0" class="bg-slate-50 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                            <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                                                <span class="text-xs font-black text-slate-600 uppercase tracking-wider">执行结果</span>
+                                                <button @click="cfTools.results = []" class="text-xs text-slate-400 hover:text-rose-500 font-bold transition-colors">关闭</button>
+                                            </div>
+                                            <div class="p-3 space-y-2 max-h-64 overflow-y-auto">
+                                                <div v-for="item in cfTools.results" :key="item.domain || item.message" class="p-3 bg-white border border-slate-100 rounded-lg text-xs">
+                                                    <div class="flex items-center justify-between gap-3">
+                                                        <span class="font-black text-slate-700 break-all">{{ item.domain || '-' }}</span>
+                                                        <span class="font-bold" :class="item.status === 'success' ? 'text-emerald-600' : (item.status === 'skipped' ? 'text-amber-600' : 'text-rose-600')">{{ item.status || '-' }}</span>
+                                                    </div>
+                                                    <p v-if="item.message" class="mt-1 text-slate-500 break-all">{{ item.message }}</p>
+                                                    <p v-if="item.nameservers" class="mt-1 text-indigo-600 font-mono break-all">{{ Array.isArray(item.nameservers) ? item.nameservers.join(', ') : item.nameservers }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="mt-6 p-5 md:p-6 bg-gradient-to-br from-blue-50/80 to-white rounded-2xl border border-blue-100 shadow-sm flex flex-col gap-4">
                                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                         <div>

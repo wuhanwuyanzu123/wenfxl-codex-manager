@@ -193,6 +193,17 @@ createApp({
             isLoadingFivesimPrices: false,
             isRestarting: false,
             isRefreshingAccounts: false,
+            cfTools: {
+                workerName: 'openai-cpa',
+                deleteDomains: '',
+                results: [],
+                isHosting: false,
+                isEnablingEmail: false,
+                isDeploying: false,
+                isSettingCatchAll: false,
+                isDeletingHosting: false
+            },
+            isUpdatingSystem: false,
         };
     },
     watch: {
@@ -1622,6 +1633,7 @@ createApp({
             }
         },
         async checkUpdate(isManual = false) {
+            if (this.appVersion === '检查中...' || !this.appVersion) return;
             try {
                 const res = await this.authFetch(`/api/system/check_update?current_version=${this.appVersion}`);
                 const data = await res.json();
@@ -1649,10 +1661,197 @@ createApp({
         },
         async promptUpdate() {
             if (!this.updateInfo.hasUpdate) return;
-            const msg = `🚀 发现新版本: ${this.updateInfo.version}\n\n📝 更新内容:\n${this.updateInfo.changelog}\n\n是否前往 GitHub 查看并下载更新？`;
+            const msg = `🚀 发现新版本: ${this.updateInfo.version}\n\n📝 更新内容:\n${this.updateInfo.changelog}\n\n是否立即执行一键更新？\n系统会自动识别 Docker/本地环境，更新期间请不要关闭页面。`;
             const confirmed = await this.customConfirm(msg);
             if (confirmed) {
-                window.open(this.updateInfo.url, '_blank');
+                this.executeAutoUpdate();
+            }
+        },
+        async executeAutoUpdate() {
+            this.isUpdatingSystem = true;
+            this.showToast("正在下发更新指令，请耐心等待...", "info");
+            try {
+                const res = await this.authFetch('/api/system/auto_update', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    this.showToast(data.message || "更新任务已启动", "success");
+                    if (this.statsTimer) clearInterval(this.statsTimer);
+                    if (this.evtSource) this.evtSource.close();
+                    this.showToast("网页将在 20 秒后自动刷新...", "info");
+                    setTimeout(() => window.location.reload(), 20000);
+                } else if (data.status === 'warning') {
+                    this.showToast(data.message || "当前环境不支持自动更新", "warning");
+                    this.isUpdatingSystem = false;
+                } else {
+                    this.showToast(`更新失败: ${data.message || '未知错误'}`, "error");
+                    this.isUpdatingSystem = false;
+                }
+            } catch (e) {
+                this.showToast("更新指令可能已发出，后端重启会导致连接断开，稍后自动刷新。", "warning");
+                setTimeout(() => window.location.reload(), 20000);
+            }
+        },
+        async handleCFBatchHosting() {
+            if (!this.config.mail_domains) return this.showToast('请填写主发信域名池！', 'warning');
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 Global API Key！', 'warning');
+
+            this.cfTools.isHosting = true;
+            this.showToast('正在请求 Cloudflare 获取 NS，请稍等...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/add_zones', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        domains: this.config.mail_domains,
+                        api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data || [];
+                    this.showToast('批量获取 NS 完成，请按结果去域名商修改 DNS。', 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(data.message || '获取 NS 失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('请求异常', 'error');
+            } finally {
+                this.cfTools.isHosting = false;
+            }
+        },
+        async handleCFEnableEmail() {
+            if (!this.config.mail_domains) return this.showToast('发信域名池为空', 'warning');
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 Global API Key！', 'warning');
+
+            this.cfTools.isEnablingEmail = true;
+            this.showToast('正在检查 NS 并启用 Cloudflare Email Routing...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/enable_email', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        domains: this.config.mail_domains,
+                        api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data || [];
+                    this.showToast('邮件路由启用流程完成。', 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(data.message || '启用失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('请求异常', 'error');
+            } finally {
+                this.cfTools.isEnablingEmail = false;
+            }
+        },
+        async handleCFDeleteHosting() {
+            const targetDomains = String(this.cfTools.deleteDomains || '').trim();
+            if (!targetDomains) return this.showToast('请先填写需要删除的 CF 托管域名！', 'warning');
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 Global API Key！', 'warning');
+
+            const confirmed = await this.customConfirm(`危险操作：即将删除这些 CF 托管域名及其 DNS/邮件路由配置，确定继续吗？\n\n${targetDomains}`);
+            if (!confirmed) return;
+
+            this.cfTools.isDeletingHosting = true;
+            this.showToast('正在批量删除 CF 托管域名...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/delete_zones', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        domains: targetDomains,
+                        api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data || [];
+                    this.showToast('托管域名删除完成', 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(data.message || '删除失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('请求异常', 'error');
+            } finally {
+                this.cfTools.isDeletingHosting = false;
+            }
+        },
+        async handleCFDeployWorker() {
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 凭据！', 'warning');
+            if (!this.cfTools.workerName) return this.showToast('请输入 Worker 项目名！', 'warning');
+
+            const currentSecret = this.config.openai_cpa?.webhook_secret || '';
+            const currentWebhookUrl = window.location.origin;
+            const confirmed = await this.customConfirm(`将在 Cloudflare 部署 Worker: ${this.cfTools.workerName}\n并自动注入当前面板地址和通信密钥，确定执行吗？`);
+            if (!confirmed) return;
+
+            this.cfTools.isDeploying = true;
+            this.showToast('正在推送 Worker 到 Cloudflare...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/deploy_worker', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key,
+                        worker_name: this.cfTools.workerName,
+                        webhook_url: currentWebhookUrl,
+                        webhook_secret: currentSecret
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.showToast(data.message || 'Worker 部署完成', 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(`部署失败: ${data.message || '未知错误'}`, 'error');
+                }
+            } catch (e) {
+                this.showToast('请求异常', 'error');
+            } finally {
+                this.cfTools.isDeploying = false;
+            }
+        },
+        async handleCFCatchAll() {
+            if (!this.config.mail_domains) return this.showToast('发信域名池为空', 'warning');
+            if (!this.cfTools.workerName) return this.showToast('请输入目标 Worker 项目名', 'warning');
+            if (!this.config.cf_api_email || !this.config.cf_api_key) return this.showToast('请填写 CF 账号邮箱和 Global API Key！', 'warning');
+
+            this.cfTools.isSettingCatchAll = true;
+            this.showToast('正在下发 Catch-All 路由规则...', 'info');
+            this.currentTab = 'console';
+            try {
+                const res = await this.authFetch('/api/cloudflare/setup_catch_all', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        domains: this.config.mail_domains,
+                        api_email: this.config.cf_api_email,
+                        api_key: this.config.cf_api_key,
+                        worker_name: this.cfTools.workerName
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    this.cfTools.results = data.data || [];
+                    this.showToast('Catch-All 规则配置完成。', 'success');
+                    this.currentTab = 'email';
+                } else {
+                    this.showToast(data.message || '配置失败', 'error');
+                }
+            } catch (e) {
+                this.showToast('请求异常', 'error');
+            } finally {
+                this.cfTools.isSettingCatchAll = false;
             }
         },
         async getGmailAuthUrl() {
