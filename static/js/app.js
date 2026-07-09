@@ -501,6 +501,11 @@ createApp({
                 if (!this.config.tmailor) {
                     this.config.tmailor = { current_token: '' };
                 }
+                if (!this.config.openai_cpa) {
+                    this.config.openai_cpa = { webhook_secret: '', use_original_password_flow: false };
+                } else if (this.config.openai_cpa.use_original_password_flow === undefined) {
+                    this.config.openai_cpa.use_original_password_flow = false;
+                }
                 if (!this.config.max_log_lines) {
                     this.config.max_log_lines = 500;
                 }

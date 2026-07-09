@@ -1221,6 +1221,15 @@
                                         </div>
                                     </div>
 
+                                    <label class="relative inline-flex mt-4 p-4 bg-white rounded-xl border border-slate-200 items-center cursor-pointer w-full hover:bg-slate-50 transition-colors shadow-sm group">
+                                        <input type="checkbox" v-model="config.openai_cpa.use_original_password_flow" class="sr-only peer">
+                                        <div class="relative w-11 h-6 shrink-0 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-indigo-600 shadow-inner transition-colors duration-300 group-hover:shadow-md"></div>
+                                        <div class="ml-4 flex-1">
+                                            <span class="font-black text-slate-800 text-sm block tracking-wide">走原密码注册通道</span>
+                                            <p class="mt-1 mb-0 text-[11px] text-slate-500 font-medium">开启后 OpenAI-CPA 模式会继续走设置密码注册流程，不走无密码 OTP 接管流程。</p>
+                                        </div>
+                                    </label>
+
                                     <div class="text-xs text-indigo-800 font-bold bg-indigo-50 border border-indigo-200 p-4 rounded-xl leading-relaxed shadow-sm mt-4">
                                         <p class="flex items-center gap-1.5 text-sm"><span>⚡</span> 减少每日CF 10w触发限制问题，邮件内存储存60秒，阅后既焚，项目重启后会自动清空。</p>
                                         <p class="mt-2 text-indigo-700 opacity-90">系统将自动开启本地服务接收，抛弃R2,D1,KV</p>

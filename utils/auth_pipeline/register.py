@@ -123,7 +123,13 @@ def run(proxy: Optional[str], run_ctx: dict = None) -> tuple:
                 try:
                     signup_json = signup_resp.json()
                     continue_url = signup_json.get("continue_url", "")
-                    if "log-in" in continue_url or "/email-verification" in continue_url:
+                    force_original_pwd = (
+                        getattr(cfg, 'EMAIL_API_MODE', '') == "openai_cpa"
+                        and getattr(cfg, 'USE_ORIGINAL_PASSWORD_FLOW', False)
+                    )
+                    if ("log-in" in continue_url or "/email-verification" in continue_url) and force_original_pwd:
+                        print(f"[{cfg.ts()}] [INFO] （{mask_email(email)}）OpenAI-CPA 原密码注册通道已开启，跳过无密码接管，继续设置密码流程。")
+                    elif "log-in" in continue_url or "/email-verification" in continue_url:
                         print(f"[{cfg.ts()}] [WARNING] （{mask_email(email)}）该邮箱被标记为已注册！准备走【无密码邮箱验证码】接管登录...")
                         login_ctx = reg_ctx.copy() if reg_ctx else {}
                         sentinel_login = generate_payload(did=did, flow="authorize_continue", proxy=proxy, user_agent=current_ua,
