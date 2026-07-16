@@ -25,6 +25,7 @@ from curl_cffi import requests, CurlMime
 import queue
 from datetime import datetime, timezone, timedelta
 from utils.email_providers import mail_service
+from utils import mail_domain_runtime
 from utils import config as cfg
 from utils import db_manager
 from utils.config import reload_all_configs, ts, format_docker_url
@@ -622,6 +623,10 @@ def handle_registration_result(result: Any, cpa_upload: bool = False, run_ctx: d
             ret_status = "retry_403"
         else:
             with _stats_lock: run_stats["failed"] += 1
+            if run_ctx and run_ctx.get("discarded_email_failure"):
+                domain_result = mail_domain_runtime.record_failure(cur_dom, "discarded_email")
+                if domain_result:
+                    print(f"[{ts()}] [INFO] 主域 {domain_result['domain']} 异常 {domain_result['fail_count']} / 成功 {domain_result['success_count']}")
             ret_status = "failed"
         if cfg.ENABLE_SUB_DOMAINS:
             mail_service.clear_sticky_domain() 
@@ -631,6 +636,9 @@ def handle_registration_result(result: Any, cpa_upload: bool = False, run_ctx: d
         with _stats_lock: run_stats["success"] += 1
         token_data    = json.loads(token_json_str)
         account_email = token_data.get("email", "unknown")
+        domain_result = mail_domain_runtime.record_success(account_email if "@" in account_email else cur_dom)
+        if domain_result:
+            print(f"[{ts()}] [INFO] 主域 {domain_result['domain']} 异常 {domain_result['fail_count']} / 成功 {domain_result['success_count']}")
 
         # 存入本地数据库
         if cpa_upload:
@@ -999,6 +1007,7 @@ def normal_main_loop(args, stop_event: threading.Event, executor=None):
                     min(cfg.REG_THREADS, target_count - success_count)
                     if target_count > 0 else cfg.REG_THREADS
                 )
+                mail_domain_runtime.begin_batch(current_batch)
                 print(f"[{ts()}] [INFO] 启用多线程并发 ({current_batch} 条通道)")
 
                 def _worker():
@@ -1233,6 +1242,7 @@ async def cpa_main_loop(args, async_stop_event: asyncio.Event, executor=None):
                 while success_in_this_cycle < need_to_reg and not async_stop_event.is_set() and not cfg.POOL_EXHAUSTED:
                     remaining  = need_to_reg - success_in_this_cycle
                     batch_size = min(cfg.REG_THREADS, remaining)
+                    mail_domain_runtime.begin_batch(batch_size)
 
                     if cfg._clash_enable and not cfg._clash_pool_mode:
                         print(f"[{ts()}] [INFO] [CPA补货] 切换全局节点...")
@@ -1416,6 +1426,7 @@ async def sub2api_main_loop(args, async_stop_event: asyncio.Event, executor=None
                 while success_in_this_cycle < need_to_reg and not async_stop_event.is_set() and not cfg.POOL_EXHAUSTED:
                     remaining  = need_to_reg - success_in_this_cycle
                     batch_size = min(cfg.REG_THREADS, remaining)
+                    mail_domain_runtime.begin_batch(batch_size)
 
                     if cfg._clash_enable and not cfg._clash_pool_mode:
                         print(f"[{ts()}] [INFO] [Sub2API补货] 切换全局节点...")

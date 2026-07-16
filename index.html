@@ -888,6 +888,46 @@
                                     </div>
                                 </div>
 
+                                <div class="mt-6 p-5 md:p-6 bg-amber-50/50 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <div>
+                                            <h4 class="text-sm font-black text-amber-700">黄金矿工模式</h4>
+                                            <p class="text-xs text-slate-500 mt-1">按主域记录异常，达到阈值后自动冷却。</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" v-model="config.enable_mail_domain_runtime_control" class="sr-only peer">
+                                            <div class="relative w-11 h-6 bg-slate-300 peer-checked:bg-amber-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                                        </label>
+                                    </div>
+                                    <div v-if="config.enable_mail_domain_runtime_control" class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-amber-200 pt-4">
+                                        <label class="text-xs font-bold text-amber-800">冷却阈值
+                                            <input type="number" min="0" v-model.number="config.mail_domain_fail_threshold" class="mt-2 w-full bg-white border border-amber-200 rounded-lg py-2 px-3 text-slate-700">
+                                        </label>
+                                        <label class="text-xs font-bold text-amber-800">冷却秒数
+                                            <input type="number" min="0" v-model.number="config.mail_domain_fail_cooldown_sec" class="mt-2 w-full bg-white border border-amber-200 rounded-lg py-2 px-3 text-slate-700">
+                                        </label>
+                                        <label class="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                            <input type="checkbox" v-model="config.mail_domain_pinpoint_burst_mode" @change="config.mail_domain_prefer_low_failure_mode = false"> 定点爆破
+                                        </label>
+                                        <label class="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                            <input type="checkbox" v-model="config.mail_domain_prefer_low_failure_mode" @change="config.mail_domain_pinpoint_burst_mode = false"> 低异常优先
+                                        </label>
+                                        <div class="md:col-span-2 flex gap-2">
+                                            <button @click="fetchMailDomainRuntime" class="px-3 py-2 text-xs font-bold bg-amber-600 text-white rounded-lg">刷新域名状态</button>
+                                            <button @click="clearMailDomainRuntime('', 'clear')" class="px-3 py-2 text-xs font-bold border border-amber-300 text-amber-800 rounded-lg">清除全部冷却</button>
+                                        </div>
+                                        <div class="md:col-span-2 space-y-2">
+                                            <div v-for="item in mailDomainRuntime" :key="item.domain" class="flex flex-wrap items-center gap-2 bg-white border border-amber-100 rounded-lg px-3 py-2 text-xs">
+                                                <span class="font-black text-slate-700 mr-auto">{{ item.domain }}</span>
+                                                <span :class="item.cooldown_remaining_sec ? 'text-rose-600' : 'text-emerald-600'">{{ item.cooldown_remaining_sec ? `冷却 ${item.cooldown_remaining_sec}s` : '可用' }}</span>
+                                                <span>成功 {{ item.success_count }} / 异常 {{ item.fail_count }}</span>
+                                                <button @click="clearMailDomainRuntime(item.domain, 'clear_counters')" class="text-amber-700 font-bold">清异常</button>
+                                                <button @click="clearMailDomainRuntime(item.domain, 'clear_cooldown')" class="text-amber-700 font-bold">清冷却</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="mt-6 p-5 md:p-6 bg-gradient-to-br from-blue-50/80 to-white rounded-2xl border border-blue-100 shadow-sm flex flex-col gap-4">
                                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                         <div>

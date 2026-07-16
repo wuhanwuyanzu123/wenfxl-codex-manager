@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 import socks
 from curl_cffi import requests
 from utils import config as cfg
+from utils import mail_domain_runtime
 from utils.integrations.ai_service import AIService
 from utils.email_providers.gmail_service import get_gmail_otp_via_oauth
 from utils.email_providers.duckmail_service import DuckMailService
@@ -503,7 +504,10 @@ def get_email_and_token(proxies: Any = None) -> tuple:
             print(f"[{cfg.ts()}] [ERROR] 未配置主域名池，无法捏造子域！")
             return None, None
 
-        selected_main = random.choice(main_list)
+        selected_main = mail_domain_runtime.pick_main_domain(main_list)
+        if not selected_main:
+            print(f"[{cfg.ts()}] [ERROR] 未找到可用主域名，当前无法生成邮箱！")
+            return None, None
         if getattr(cfg, 'RANDOM_SUB_DOMAIN_LEVEL', False):
             level = random.randint(1, 7)
         else:
@@ -527,7 +531,10 @@ def get_email_and_token(proxies: Any = None) -> tuple:
         if not domain_list:
             print(f"[{cfg.ts()}] [ERROR] 域名池配置为空，无法生成邮箱！")
             return None, None
-        selected_domain = random.choice(domain_list)
+        selected_domain = mail_domain_runtime.pick_main_domain(domain_list)
+        if not selected_domain:
+            print(f"[{cfg.ts()}] [ERROR] 未找到可用主域名，当前无法生成邮箱！")
+            return None, None
 
     email_str = f"{prefix}@{selected_domain}"
     set_last_email(email_str)

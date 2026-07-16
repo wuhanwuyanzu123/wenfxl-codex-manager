@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from global_state import VALID_TOKENS, CLUSTER_NODES, NODE_COMMANDS, cluster_lock, log_history, engine, verify_token, worker_status, append_log
-from utils import core_engine, db_manager
+from utils import core_engine, db_manager, mail_domain_runtime
 from utils.config import reload_all_configs
 from utils.integrations.tg_notifier import send_tg_msg_async
 import utils.config as cfg
@@ -122,6 +122,7 @@ async def start_task(token: str = Depends(verify_token)):
     default_proxy = getattr(core_engine.cfg, 'DEFAULT_PROXY', None)
     args = DummyArgs(proxy=default_proxy if default_proxy else None)
     core_engine.run_stats.update({"success": 0, "failed": 0, "retries": 0, "pwd_blocked": 0, "phone_verify": 0, "start_time": time.time(),"target": 0})
+    mail_domain_runtime.start()
     if getattr(core_engine.cfg, 'ENABLE_CPA_MODE', False):
         engine.start_cpa(args)
         return {"status": "success", "message": "启动成功：已自动识别并开启 [CPA 智能仓管模式]"}
@@ -156,6 +157,7 @@ async def stop_task(token: str = Depends(verify_token)):
 
     asyncio.create_task(send_tg_msg_async(msg))
     engine.stop()
+    mail_domain_runtime.stop()
     return {"status": "success", "message": "已发送停止指令，正在安全退出..."}
 
 
@@ -242,6 +244,26 @@ async def get_config(token: str = Depends(verify_token)):
     return config_data
 
 
+@router.get("/api/config/mail_domain_runtime_stats")
+async def get_mail_domain_runtime_stats(token: str = Depends(verify_token)):
+    return {"status": "success", "items": mail_domain_runtime.stats()}
+
+
+@router.post("/api/config/mail_domain_runtime_stats/clear")
+async def clear_mail_domain_runtime_stats(token: str = Depends(verify_token)):
+    return {"status": "success", "cleared": mail_domain_runtime.clear_all_cooldowns()}
+
+
+@router.post("/api/config/mail_domain_runtime_stats/{domain}/clear_counters")
+async def clear_mail_domain_runtime_counters(domain: str, token: str = Depends(verify_token)):
+    return {"status": "success" if mail_domain_runtime.clear_counters(domain) else "error"}
+
+
+@router.post("/api/config/mail_domain_runtime_stats/{domain}/clear_cooldown")
+async def clear_mail_domain_runtime_cooldown(domain: str, token: str = Depends(verify_token)):
+    return {"status": "success" if mail_domain_runtime.clear_cooldown(domain) else "error"}
+
+
 @router.post("/api/config")
 async def save_config(new_config: dict, token: str = Depends(verify_token)):
     try:
@@ -249,6 +271,9 @@ async def save_config(new_config: dict, token: str = Depends(verify_token)):
             new_config["sub2api_mode"].pop("min_remaining_weekly_percent", None)
         new_config["local_microsoft"] = _sanitize_local_microsoft_config(new_config.get("local_microsoft"))
         reload_all_configs(new_config_dict=new_config)
+        mail_domain_runtime.sync_config()
+        if engine.is_running():
+            mail_domain_runtime.start()
 
         return {"status": "success", "message": "✅ 配置已成功保存并同步至云端！"}
     except Exception as e:

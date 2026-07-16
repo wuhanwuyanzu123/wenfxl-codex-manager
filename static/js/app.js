@@ -69,6 +69,8 @@ createApp({
 			},
 			tempSubDomains: [],
             logs: [],
+            mailDomainRuntime: [],
+            isLoadingMailDomainRuntime: false,
             logBuffer: [],
             logFlushTimer: null,
             config: null,
@@ -509,6 +511,12 @@ createApp({
                 if (!this.config.max_log_lines) {
                     this.config.max_log_lines = 500;
                 }
+                if (this.config.enable_mail_domain_runtime_control === undefined) this.config.enable_mail_domain_runtime_control = false;
+                if (this.config.mail_domain_pinpoint_burst_mode === undefined) this.config.mail_domain_pinpoint_burst_mode = false;
+                if (this.config.mail_domain_prefer_low_failure_mode === undefined) this.config.mail_domain_prefer_low_failure_mode = false;
+                if (this.config.mail_domain_fail_threshold === undefined) this.config.mail_domain_fail_threshold = 3;
+                if (this.config.mail_domain_fail_cooldown_sec === undefined) this.config.mail_domain_fail_cooldown_sec = 600;
+                if (!Array.isArray(this.config.mail_domain_failure_types)) this.config.mail_domain_failure_types = ['discarded_email'];
                 if (!this.config.temporam) {
                     this.config.temporam = { cookie: '' };
                 }
@@ -583,6 +591,7 @@ createApp({
                 if (this.config.cluster_node_name === undefined) this.config.cluster_node_name = '';
                 if (this.config.cluster_master_url === undefined) this.config.cluster_master_url = '';
                 if (this.config.cluster_secret === undefined) this.config.cluster_secret = 'wenfxl666';
+                this.fetchMailDomainRuntime();
             } catch (e) {}
         },
         async saveConfig() {
@@ -1670,6 +1679,31 @@ createApp({
             const confirmed = await this.customConfirm(msg);
             if (confirmed) {
                 this.executeAutoUpdate();
+            }
+        },
+        async fetchMailDomainRuntime() {
+            this.isLoadingMailDomainRuntime = true;
+            try {
+                const res = await this.authFetch('/api/config/mail_domain_runtime_stats');
+                const data = await res.json();
+                this.mailDomainRuntime = data.status === 'success' ? (data.items || []) : [];
+            } catch (e) {
+                this.showToast('Failed to load domain runtime status', 'error');
+            } finally {
+                this.isLoadingMailDomainRuntime = false;
+            }
+        },
+        async clearMailDomainRuntime(domain, action) {
+            try {
+                const path = domain
+                    ? `/api/config/mail_domain_runtime_stats/${encodeURIComponent(domain)}/${action}`
+                    : '/api/config/mail_domain_runtime_stats/clear';
+                const res = await this.authFetch(path, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') await this.fetchMailDomainRuntime();
+                else this.showToast('Domain runtime update failed', 'error');
+            } catch (e) {
+                this.showToast('Domain runtime request failed', 'error');
             }
         },
         async executeAutoUpdate() {
