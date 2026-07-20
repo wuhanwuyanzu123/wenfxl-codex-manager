@@ -423,12 +423,65 @@ def test_sub2api_account_direct(item: dict, proxy: str) -> Tuple[bool, str]:
     except Exception as e:
         return False, f"测活异常: {e}"
 
+
+def _should_recheck_cpa_failure(message: str) -> bool:
+    """Only defer cleanup for potentially transient authentication/rate-limit responses."""
+    return "HTTP 401" in str(message) or "HTTP 429" in str(message)
+
+
+def _recheck_cpa_failure(item: dict, args: Any, initial_message: str) -> Tuple[bool, str]:
+    """Confirm transient failures before the caller disables or deletes a CPA credential."""
+    name = item.get("name")
+    total_checks = max(1, int(cfg.CPA_FAILURE_RECHECK_ATTEMPTS))
+    message = initial_message
+
+    print(
+        f"[{ts()}] [WARNING] 测活: 凭证 {mask_email(name)} 初次失败 ({message})，"
+        f"将执行 {total_checks} 次确认测活后再处理。"
+    )
+
+    for retry_index in range(1, total_checks):
+        delay_minutes = (
+            cfg.CPA_FAILURE_RECHECK_FIRST_DELAY_MINUTES
+            if retry_index == 1
+            else cfg.CPA_FAILURE_RECHECK_INTERVAL_MINUTES
+        )
+        print(
+            f"[{ts()}] [INFO] 测活: 凭证 {mask_email(name)} 将在 {delay_minutes} 分钟后进行"
+            f"第 {retry_index + 1}/{total_checks} 次确认。"
+        )
+
+        deadline = time.monotonic() + (delay_minutes * 60)
+        while time.monotonic() < deadline:
+            if hasattr(args, "check_stop") and args.check_stop():
+                return False, "测活任务已停止"
+            time.sleep(min(1.0, max(0.0, deadline - time.monotonic())))
+
+        is_ok, message = test_cliproxy_auth_file(item, cfg.CPA_API_URL, cfg.CPA_API_TOKEN)
+        if is_ok:
+            print(
+                f"[{ts()}] [SUCCESS] 测活: 凭证 {mask_email(name)} "
+                f"第 {retry_index + 1}/{total_checks} 次确认恢复正常，取消清理。"
+            )
+            return True, message
+
+        print(
+            f"[{ts()}] [WARNING] 测活: 凭证 {mask_email(name)} "
+            f"第 {retry_index + 1}/{total_checks} 次确认仍失败 ({message})。"
+        )
+
+    return False, message
+
+
 def process_account_worker(i: int, total: int, item: dict, args: Any) -> bool:
     if hasattr(args, 'check_stop') and args.check_stop(): return False
     name        = item.get("name")
     email = name.replace(".json", "")
     is_disabled = item.get("disabled", False)
     is_ok, msg  = test_cliproxy_auth_file(item, cfg.CPA_API_URL, cfg.CPA_API_TOKEN)
+
+    if not is_ok and _should_recheck_cpa_failure(msg):
+        is_ok, msg = _recheck_cpa_failure(item, args, msg)
 
     if is_ok:
         try:

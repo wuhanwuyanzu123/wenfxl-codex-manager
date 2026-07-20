@@ -233,6 +233,9 @@ CPA_THREADS: int = 10
 CPA_AUTO_CHECK: bool = True
 CPA_RETAIN_REG_ONLY: bool = False
 CPA_BACKGROUND_CHECK_THREADS: int = 10
+CPA_FAILURE_RECHECK_ATTEMPTS: int = 3
+CPA_FAILURE_RECHECK_FIRST_DELAY_MINUTES: int = 10
+CPA_FAILURE_RECHECK_INTERVAL_MINUTES: int = 10
 
 
 CHECK_INTERVAL_MINUTES: int = 60
@@ -409,6 +412,7 @@ def reload_all_configs(new_config_dict=None):
     global CPA_API_URL, CPA_API_TOKEN, MIN_ACCOUNTS_THRESHOLD, BATCH_REG_COUNT
     global MIN_REMAINING_WEEKLY_PERCENT, REMOVE_ON_LIMIT_REACHED, REMOVE_DEAD_ACCOUNTS
     global CPA_THREADS, CHECK_INTERVAL_MINUTES, ENABLE_TOKEN_REVIVE, CPA_BACKGROUND_CHECK_THREADS
+    global CPA_FAILURE_RECHECK_ATTEMPTS, CPA_FAILURE_RECHECK_FIRST_DELAY_MINUTES, CPA_FAILURE_RECHECK_INTERVAL_MINUTES
     global NORMAL_SLEEP_MIN, NORMAL_SLEEP_MAX, NORMAL_TARGET_COUNT
     global _clash_enable, _clash_pool_mode, WARP_PROXY_LIST, PROXY_QUEUE, PROXY_QUEUE_GENERATION
     global _raw_proxy_enable, RAW_PROXY_LIST
@@ -636,6 +640,15 @@ def reload_all_configs(new_config_dict=None):
     CPA_RETAIN_REG_ONLY = safe_bool(_cpa.get("retain_reg_only", False))
     CPA_BACKGROUND_CHECK_THREADS = safe_int(
         _cpa.get("background_check_threads", 10), 10, minimum=1
+    )
+    CPA_FAILURE_RECHECK_ATTEMPTS = safe_int(
+        _cpa.get("failure_recheck_attempts", 3), 3, minimum=1
+    )
+    CPA_FAILURE_RECHECK_FIRST_DELAY_MINUTES = safe_int(
+        _cpa.get("failure_recheck_first_delay_minutes", 10), 10, minimum=0
+    )
+    CPA_FAILURE_RECHECK_INTERVAL_MINUTES = safe_int(
+        _cpa.get("failure_recheck_interval_minutes", 10), 10, minimum=0
     )
 
     _sub2api = _c.get("sub2api_mode", {})
