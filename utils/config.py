@@ -232,6 +232,7 @@ REMOVE_DEAD_ACCOUNTS: bool = False
 CPA_THREADS: int = 10
 CPA_AUTO_CHECK: bool = True
 CPA_RETAIN_REG_ONLY: bool = False
+CPA_BACKGROUND_CHECK_THREADS: int = 10
 
 
 CHECK_INTERVAL_MINUTES: int = 60
@@ -407,7 +408,7 @@ def reload_all_configs(new_config_dict=None):
     global ENABLE_CPA_MODE, SAVE_TO_LOCAL_IN_CPA_MODE
     global CPA_API_URL, CPA_API_TOKEN, MIN_ACCOUNTS_THRESHOLD, BATCH_REG_COUNT
     global MIN_REMAINING_WEEKLY_PERCENT, REMOVE_ON_LIMIT_REACHED, REMOVE_DEAD_ACCOUNTS
-    global CPA_THREADS, CHECK_INTERVAL_MINUTES, ENABLE_TOKEN_REVIVE
+    global CPA_THREADS, CHECK_INTERVAL_MINUTES, ENABLE_TOKEN_REVIVE, CPA_BACKGROUND_CHECK_THREADS
     global NORMAL_SLEEP_MIN, NORMAL_SLEEP_MAX, NORMAL_TARGET_COUNT
     global _clash_enable, _clash_pool_mode, WARP_PROXY_LIST, PROXY_QUEUE, PROXY_QUEUE_GENERATION
     global _raw_proxy_enable, RAW_PROXY_LIST
@@ -633,6 +634,9 @@ def reload_all_configs(new_config_dict=None):
     ENABLE_TOKEN_REVIVE = _cpa.get("enable_token_revive", False)
     CPA_AUTO_CHECK = _cpa.get("auto_check", True)
     CPA_RETAIN_REG_ONLY = safe_bool(_cpa.get("retain_reg_only", False))
+    CPA_BACKGROUND_CHECK_THREADS = safe_int(
+        _cpa.get("background_check_threads", 10), 10, minimum=1
+    )
 
     _sub2api = _c.get("sub2api_mode", {})
     ENABLE_SUB2API_MODE = _sub2api.get("enable", False)

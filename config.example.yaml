@@ -254,6 +254,8 @@ cpa_mode:
   check_interval_minutes: 60
   #并发线程数配置，默认 10 线程
   threads: 10
+  # 补货运行期间的独立后台巡检并发数，默认 10
+  background_check_threads: 10
   #是否保存仅注册账号，用于后续手动登录或者其他作用
   retain_reg_only: false
 

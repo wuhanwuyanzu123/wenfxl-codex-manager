@@ -9,6 +9,7 @@
 import argparse
 import asyncio
 import builtins
+import copy
 import io
 import json
 import os
@@ -1177,6 +1178,47 @@ async def manual_check_main_loop(args, async_stop_event: asyncio.Event, executor
     async_stop_event.set()
 
 
+async def periodic_cpa_check_loop(args, async_stop_event: asyncio.Event, executor=None):
+    """Run CPA liveness checks independently of the replenish loop."""
+    interval_seconds = max(1, int(cfg.CHECK_INTERVAL_MINUTES)) * 60
+
+    def should_stop() -> bool:
+        check_stop = getattr(args, "check_stop", None)
+        return (
+            async_stop_event.is_set()
+            or getattr(cfg, "GLOBAL_STOP", False)
+            or (callable(check_stop) and check_stop())
+        )
+
+    print(
+        f"[{ts()}] [系统] 独立 CPA 定时测活已启动：每 "
+        f"{cfg.CHECK_INTERVAL_MINUTES} 分钟巡检一次，"
+        f"并发 {cfg.CPA_BACKGROUND_CHECK_THREADS}。"
+    )
+
+    while not should_stop():
+        try:
+            await asyncio.wait_for(async_stop_event.wait(), timeout=interval_seconds)
+            break
+        except asyncio.TimeoutError:
+            pass
+
+        if should_stop():
+            break
+
+        print(f"[{ts()}] [INFO] 独立 CPA 定时测活开始，不等待补货任务结束...")
+        try:
+            valid_count, total_files = await perform_cpa_check(
+                args, async_stop_event, asyncio.get_running_loop(), executor=executor
+            )
+            print(
+                f"[{ts()}] [INFO] 独立 CPA 定时测活结束："
+                f"有效 {valid_count} / {total_files}。"
+            )
+        except Exception as e:
+            print(f"[{ts()}] [ERROR] 独立 CPA 定时测活异常: {e}")
+
+
 async def cpa_main_loop(args, async_stop_event: asyncio.Event, executor=None):
     """CPA 智能仓管模式（接入发牌器，防止撞车）。"""
     print("=" * 60)
@@ -1555,6 +1597,11 @@ class RegEngine:
         self.loop              = None
         self._force_stopped    = False
         self._executor         = None
+        self.periodic_check_thread = None
+        self.periodic_check_stop_event = threading.Event()
+        self.periodic_check_loop = None
+        self.periodic_check_async_stop_event = None
+        self._periodic_check_executor = None
 
     def _ensure_executor(self, max_workers=None):
         if self._executor is None:
@@ -1567,7 +1614,59 @@ class RegEngine:
             self._executor.shutdown(wait=False, cancel_futures=True)
             self._executor = None
 
+    def _shutdown_periodic_check_executor(self):
+        if self._periodic_check_executor is not None:
+            self._periodic_check_executor.shutdown(wait=False, cancel_futures=True)
+            self._periodic_check_executor = None
+
+    def _request_periodic_cpa_check_stop(self):
+        self.periodic_check_stop_event.set()
+        if self.periodic_check_loop and self.periodic_check_async_stop_event:
+            try:
+                self.periodic_check_loop.call_soon_threadsafe(
+                    self.periodic_check_async_stop_event.set
+                )
+            except RuntimeError:
+                pass
+
+    def _start_periodic_cpa_check(self, args):
+        if not cfg.CPA_AUTO_CHECK:
+            return
+        if self.periodic_check_thread is not None and self.periodic_check_thread.is_alive():
+            return
+
+        self.periodic_check_stop_event.clear()
+        workers = min(max(1, int(cfg.CPA_BACKGROUND_CHECK_THREADS)), max(1, int(cfg.CPA_THREADS)))
+        self._periodic_check_executor = ThreadPoolExecutor(max_workers=workers)
+        check_args = copy.copy(args)
+        check_args.check_stop = lambda: self.periodic_check_stop_event.is_set()
+        self.periodic_check_thread = threading.Thread(
+            target=self._run_periodic_cpa_check_in_thread,
+            args=(check_args,),
+            daemon=True,
+        )
+        self.periodic_check_thread.start()
+
+    def _run_periodic_cpa_check_in_thread(self, args):
+        self.periodic_check_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.periodic_check_loop)
+        try:
+            self.periodic_check_async_stop_event = asyncio.Event()
+            self.periodic_check_loop.run_until_complete(
+                periodic_cpa_check_loop(
+                    args,
+                    self.periodic_check_async_stop_event,
+                    executor=self._periodic_check_executor,
+                )
+            )
+        finally:
+            self.periodic_check_async_stop_event = None
+            self.periodic_check_loop.close()
+            self.periodic_check_loop = None
+            self._shutdown_periodic_check_executor()
+
     def _finalize_thread_run(self):
+        self._request_periodic_cpa_check_stop()
         if self.loop is not None:
             self.loop.close()
             self.loop = None
@@ -1598,6 +1697,7 @@ class RegEngine:
         cfg.POOL_EXHAUSTED = False
         self.thread_stop_event.clear()
         self._ensure_executor()
+        self._start_periodic_cpa_check(args)
         self.current_thread = threading.Thread(
             target=self._run_cpa_in_thread, args=(args,), daemon=True
         )
@@ -1652,6 +1752,7 @@ class RegEngine:
         cfg.GLOBAL_STOP = True
         cfg.POOL_EXHAUSTED = True
         self.thread_stop_event.set()
+        self._request_periodic_cpa_check_stop()
         if self.loop and self.async_stop_event:
             self.loop.call_soon_threadsafe(self.async_stop_event.set)
         time.sleep(0.5)
